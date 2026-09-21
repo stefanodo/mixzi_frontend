@@ -15,6 +15,13 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/_generated": ["apis/index.ts"],
+      "@/_generated/*": ["apis/*"]
+    },
 
     /* Linting */
     "noUnusedLocals": true,

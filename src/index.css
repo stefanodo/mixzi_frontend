@@ -49,6 +49,7 @@
 }
 
 :root {
+  color-scheme: light;
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
@@ -60,12 +61,12 @@
     --secondary: oklch(0.97 0 0);
     --secondary-foreground: oklch(0.205 0 0);
     --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
+    --muted-foreground: oklch(0.32 0.025 260);
     --accent: oklch(0.97 0 0);
     --accent-foreground: oklch(0.205 0 0);
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
+    --border: oklch(0.78 0.02 260);
+    --input: oklch(0.78 0.02 260);
     --ring: oklch(0.708 0 0);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
@@ -79,11 +80,24 @@
     --sidebar-primary-foreground: oklch(0.985 0 0);
     --sidebar-accent: oklch(0.97 0 0);
     --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-border: oklch(0.74 0.015 260);
     --sidebar-ring: oklch(0.708 0 0);
+    --nav-background: oklch(0.98 0.005 260);
+    --nav-border: oklch(0.72 0.02 260);
+    --nav-border-hover: oklch(0.76 0.03 260);
+    --nav-item: oklch(0.9 0.012 260);
+    --nav-item-hover: oklch(0.92 0.015 260);
+    --nav-muted: oklch(0.32 0.025 260);
+    --nav-text: oklch(0.2 0.025 260);
+    --nav-active: oklch(0.92 0.055 245);
+    --nav-active-border: oklch(0.62 0.16 245);
+    --nav-active-text: oklch(0.27 0.1 245);
+    --nav-focus: oklch(0.58 0.18 245);
+    --nav-shadow: oklch(0.2 0.02 260 / 10%);
 }
 
 .dark {
+  color-scheme: dark;
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.205 0 0);
@@ -115,7 +129,57 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
+    --nav-background: oklch(0.16 0.02 260);
+    --nav-border: oklch(0.28 0.03 260);
+    --nav-border-hover: oklch(0.4 0.04 260);
+    --nav-item: oklch(0.2 0.025 260);
+    --nav-item-hover: oklch(0.25 0.035 260);
+    --nav-muted: oklch(0.67 0.025 260);
+    --nav-text: oklch(0.93 0.015 260);
+    --nav-active: oklch(0.27 0.09 245);
+    --nav-active-border: oklch(0.62 0.16 245);
+    --nav-active-text: oklch(0.94 0.03 245);
+    --nav-focus: oklch(0.7 0.16 245);
+    --nav-shadow: oklch(0.95 0.01 260 / 6%);
 }
+
+  :root[data-theme="standard"] {
+    color-scheme: light;
+    --background: oklch(0.98 0.005 260);
+    --foreground: oklch(0.2 0.025 260);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.2 0.025 260);
+    --muted: oklch(0.94 0.01 260);
+    --muted-foreground: oklch(0.32 0.025 260);
+    --border: oklch(0.78 0.02 260);
+    --nav-background: oklch(0.98 0.005 260);
+    --nav-border: oklch(0.72 0.02 260);
+    --nav-item: oklch(0.9 0.012 260);
+    --nav-item-hover: oklch(0.92 0.015 260);
+    --nav-muted: oklch(0.32 0.025 260);
+    --nav-text: oklch(0.2 0.025 260);
+    --nav-active: oklch(0.92 0.055 245);
+    --nav-active-text: oklch(0.27 0.1 245);
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.93 0.015 260);
+    --card: oklch(0.205 0.02 260);
+    --card-foreground: oklch(0.93 0.015 260);
+    --muted: oklch(0.25 0.035 260);
+    --muted-foreground: oklch(0.67 0.025 260);
+    --border: oklch(0.28 0.03 260);
+    --nav-background: oklch(0.16 0.02 260);
+    --nav-border: oklch(0.28 0.03 260);
+    --nav-item: oklch(0.2 0.025 260);
+    --nav-item-hover: oklch(0.25 0.035 260);
+    --nav-muted: oklch(0.67 0.025 260);
+    --nav-text: oklch(0.93 0.015 260);
+    --nav-active: oklch(0.27 0.09 245);
+    --nav-active-text: oklch(0.94 0.03 245);
+  }
 
 @layer base {
   * {
@@ -127,4 +191,30 @@
   html {
     @apply font-sans;
     }
+  body {
+    min-width: 320px;
+    font-size: 1rem;
+    line-height: 1.5;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+body[data-theme="standard"] {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+body[data-theme="dark"] {
+  background-color: var(--background);
+  color: var(--foreground);
 }
