@@ -80,7 +80,7 @@ export const NavigationComponent = () => {
 
     return (
         <header className="border-b border-(--nav-border) bg-(--nav-background) text-(--nav-muted) shadow-[0_1px_0_var(--nav-shadow)]">
-            <div className="relative flex min-h-19 items-center gap-2 px-3 sm:gap-3 sm:px-4">
+            <div className="relative flex min-h-19 items-center gap-2 px-6 sm:gap-3 sm:px-6">
                 <NavLink
                     className="mr-1 shrink-0 leading-none"
                     to={RoutePaths.MixziDashboard}
