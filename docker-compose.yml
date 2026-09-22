@@ -1,0 +1,20 @@
+services:
+  mixzi-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_MIXZI_API_BASE: ${VITE_MIXZI_API_BASE}
+        VITE_APP_MODE: ${VITE_APP_MODE}
+        VITE_APP_MOCKED_VALUES: ${VITE_APP_MOCKED_VALUES}
+    image: mixzi-frontend:latest
+    container_name: mixzi-frontend
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    networks:
+      - nginx-proxy-manager_default
+
+networks:
+  nginx-proxy-manager_default:
+    external: true
