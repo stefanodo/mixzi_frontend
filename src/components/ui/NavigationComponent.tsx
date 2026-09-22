@@ -80,7 +80,7 @@ export const NavigationComponent = () => {
 
     return (
         <header className="border-b border-(--nav-border) bg-(--nav-background) text-(--nav-muted) shadow-[0_1px_0_var(--nav-shadow)]">
-            <div className="relative flex min-h-19 items-center gap-2 px-6 sm:gap-3 sm:px-6">
+            <div className="relative flex min-h-19 items-center gap-2 px-4 sm:gap-3 sm:px-6">
                 <NavLink
                     className="mr-1 shrink-0 leading-none"
                     to={RoutePaths.MixziDashboard}
@@ -94,7 +94,7 @@ export const NavigationComponent = () => {
                     aria-controls="mixzi-navigation-menu"
                     aria-expanded={isMenuOpen}
                     aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"}
-                    className="inline-flex size-12 shrink-0 items-center justify-center rounded-lg border border-(--nav-border) bg-(--nav-item) text-(--nav-text) transition-colors hover:bg-(--nav-item-hover) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--nav-focus) sm:hidden"
+                    className="ml-auto inline-flex size-12 shrink-0 items-center justify-center rounded-lg border border-(--nav-border) bg-(--nav-item) text-(--nav-text) transition-colors hover:bg-(--nav-item-hover) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--nav-focus) sm:ml-0 sm:hidden"
                     onPointerUp={handleMenuToggle}
                     onKeyDown={handleMenuKeyboardActivation}
                     type="button"
