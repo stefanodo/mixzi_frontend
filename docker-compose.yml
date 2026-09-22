@@ -7,6 +7,7 @@ services:
         VITE_MIXZI_API_BASE: ${VITE_MIXZI_API_BASE}
         VITE_APP_MODE: ${VITE_APP_MODE}
         VITE_APP_MOCKED_VALUES: ${VITE_APP_MOCKED_VALUES}
+        VITE_MIXZI_AUTH_BASE: ${VITE_MIXZI_AUTH_BASE}
     image: mixzi-frontend:latest
     container_name: mixzi-frontend
     restart: unless-stopped
