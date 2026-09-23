@@ -247,20 +247,36 @@ body[data-theme="dark"] {
   color: var(--foreground);
 }
 
+.mixzi-wordmark {
+  font-family: "Quicksand Variable", var(--font-sans);
+  font-weight: 700;
+  letter-spacing: 2px;
+  line-height: 0.82;
+  color: color-mix(in oklab, var(--nav-text) 72%, var(--nav-background));
+}
+
+.mixzi-wordmark-accent {
+  position: relative;
+  top: 2px;
+  color: var(--nav-focus);
+  font-size: 1.3em;
+  opacity: 0.6;
+}
+
 @media (max-width: 639px) {
   .mixzi-mobile-nav {
     background:
       linear-gradient(
         135deg,
-        color-mix(in oklab, var(--nav-background) 68%, white 32%),
-        color-mix(in oklab, var(--nav-background) 58%, transparent)
+        color-mix(in oklab, var(--nav-background) 72%, transparent),
+        color-mix(in oklab, var(--nav-background) 40%, transparent)
       ) !important;
-    border-bottom-color: color-mix(in oklab, var(--nav-border) 62%, white 38%);
+    border-bottom-color: color-mix(in oklab, var(--nav-border) 48%, white 52%);
     box-shadow:
       0 1px 0 color-mix(in oklab, var(--nav-border) 55%, white 45%),
       0 10px 30px var(--nav-shadow);
-    -webkit-backdrop-filter: blur(26px) saturate(165%);
-    backdrop-filter: blur(26px) saturate(165%);
+    -webkit-backdrop-filter: blur(6.5px) saturate(165%);
+    backdrop-filter: blur(6.5px) saturate(165%);
   }
 
   .mixzi-mobile-nav::after {
@@ -277,5 +293,16 @@ body[data-theme="dark"] {
     );
     content: "";
     pointer-events: none;
+  }
+
+  .mixzi-mobile-glass-control {
+    border: 1px solid color-mix(in oklab, var(--nav-active-border) 58%, transparent);
+    background: color-mix(in oklab, var(--nav-active) 42%, transparent) !important;
+    color: var(--nav-active-text) !important;
+    -webkit-backdrop-filter: blur(6.5px) saturate(165%);
+    backdrop-filter: blur(6.5px) saturate(165%);
+    box-shadow:
+      0 1px 0 color-mix(in oklab, var(--nav-border) 55%, white 45%),
+      0 10px 30px var(--nav-shadow);
   }
 }

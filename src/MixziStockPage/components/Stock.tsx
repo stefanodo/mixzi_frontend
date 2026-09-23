@@ -559,7 +559,7 @@ export const Stock = observer(() => {
                         aria-label="Añadir movimiento"
                         title="Añadir movimiento"
                         ref={movementTriggerRef}
-                        className="fixed right-5 bottom-5 z-30 size-14 rounded-full shadow-lg md:hidden"
+                        className="mixzi-mobile-glass-control fixed right-5 bottom-5 z-30 size-14 rounded-full shadow-lg md:hidden"
                         onClick={() => setIsMovementFormOpen(true)}
                         onKeyDown={(event) => handleKeyboardActivation(event, () => setIsMovementFormOpen(true))}
                     >

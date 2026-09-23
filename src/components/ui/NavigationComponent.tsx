@@ -86,8 +86,8 @@ export const NavigationComponent = () => {
                     to={RoutePaths.MixziDashboard}
                     onKeyDown={handleKeyboardActivation}
                 >
-                    <span className="block text-[17px] font-extrabold tracking-[-0.04em] text-(--nav-text)">Mixzi</span>
-                    <span className="mt-1 block text-[8px] font-medium uppercase tracking-[0.12em] text-(--nav-muted)">Inventory workspace</span>
+                    <span className="mixzi-wordmark block text-[38px] text-(--nav-text)">mi<span className="mixzi-wordmark-accent">x</span>zi</span>
+                    <span className="ml-0.5 mt-1 block text-[8px] font-medium uppercase tracking-[0.18em] text-(--nav-muted)">Restaurant Management System</span>
                 </NavLink>
 
                 <nav
@@ -106,7 +106,7 @@ export const NavigationComponent = () => {
                         aria-controls="mixzi-navigation-menu"
                         aria-expanded={isMenuOpen}
                         aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"}
-                        className="inline-flex size-12 items-center justify-center rounded-lg border border-(--nav-border) bg-(--nav-item) text-(--nav-text) transition-colors hover:bg-(--nav-item-hover) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--nav-focus) sm:hidden"
+                        className="mixzi-mobile-glass-control inline-flex size-12 items-center justify-center rounded-lg border border-(--nav-border) bg-(--nav-item) text-(--nav-text) transition-colors hover:bg-(--nav-item-hover) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--nav-focus) sm:hidden"
                         onPointerUp={handleMenuToggle}
                         onKeyDown={handleMenuKeyboardActivation}
                         type="button"
@@ -115,16 +115,16 @@ export const NavigationComponent = () => {
                     </button>
 
                     <button
-                        aria-label={`Switch to ${theme === "dark" ? "standard" : "dark"} theme`}
+                        aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
                         aria-pressed={theme === "dark"}
                         className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-lg border border-(--nav-border) bg-(--nav-item) px-3 text-xs font-semibold text-(--nav-text) transition-colors hover:bg-(--nav-item-hover) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--nav-focus)"
                         onPointerUp={handleThemeToggle}
                         onKeyDown={handleThemeKeyboardActivation}
-                        title={`Switch to ${theme === "dark" ? "standard" : "dark"} theme`}
+                        title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
                         type="button"
                     >
                         {theme === "dark" ? <Sun className="size-5" /> : <Moon className="size-5" />}
-                        <span className="hidden sm:inline">{theme === "dark" ? "Dark" : "Standard"}</span>
+                        <span className="hidden sm:inline">{theme === "dark" ? "Dark" : "Light"}</span>
                     </button>
                 </div>
 
