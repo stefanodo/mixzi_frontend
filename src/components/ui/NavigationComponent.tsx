@@ -90,18 +90,6 @@ export const NavigationComponent = () => {
                     <span className="mt-1 block text-[8px] font-medium uppercase tracking-[0.12em] text-(--nav-muted)">Inventory workspace</span>
                 </NavLink>
 
-                <button
-                    aria-controls="mixzi-navigation-menu"
-                    aria-expanded={isMenuOpen}
-                    aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"}
-                    className="ml-auto inline-flex size-12 shrink-0 items-center justify-center rounded-lg border border-(--nav-border) bg-(--nav-item) text-(--nav-text) transition-colors hover:bg-(--nav-item-hover) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--nav-focus) sm:ml-0 sm:hidden"
-                    onPointerUp={handleMenuToggle}
-                    onKeyDown={handleMenuKeyboardActivation}
-                    type="button"
-                >
-                    {isMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-                </button>
-
                 <nav
                     aria-label="Primary navigation"
                     aria-hidden={isMobile && !isMenuOpen}
@@ -113,18 +101,32 @@ export const NavigationComponent = () => {
                     </ul>
                 </nav>
 
-                <button
-                    aria-label={`Switch to ${theme === "dark" ? "standard" : "dark"} theme`}
-                    aria-pressed={theme === "dark"}
-                    className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-lg border border-(--nav-border) bg-(--nav-item) px-3 text-xs font-semibold text-(--nav-text) transition-colors hover:bg-(--nav-item-hover) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--nav-focus)"
-                    onPointerUp={handleThemeToggle}
-                    onKeyDown={handleThemeKeyboardActivation}
-                    title={`Switch to ${theme === "dark" ? "standard" : "dark"} theme`}
-                    type="button"
-                >
-                    {theme === "dark" ? <Sun className="size-5" /> : <Moon className="size-5" />}
-                    <span className="hidden sm:inline">{theme === "dark" ? "Dark" : "Standard"}</span>
-                </button>
+                <div className="ml-auto flex shrink-0 items-center gap-2 sm:ml-0">
+                    <button
+                        aria-controls="mixzi-navigation-menu"
+                        aria-expanded={isMenuOpen}
+                        aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+                        className="inline-flex size-12 items-center justify-center rounded-lg border border-(--nav-border) bg-(--nav-item) text-(--nav-text) transition-colors hover:bg-(--nav-item-hover) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--nav-focus) sm:hidden"
+                        onPointerUp={handleMenuToggle}
+                        onKeyDown={handleMenuKeyboardActivation}
+                        type="button"
+                    >
+                        {isMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+                    </button>
+
+                    <button
+                        aria-label={`Switch to ${theme === "dark" ? "standard" : "dark"} theme`}
+                        aria-pressed={theme === "dark"}
+                        className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-lg border border-(--nav-border) bg-(--nav-item) px-3 text-xs font-semibold text-(--nav-text) transition-colors hover:bg-(--nav-item-hover) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--nav-focus)"
+                        onPointerUp={handleThemeToggle}
+                        onKeyDown={handleThemeKeyboardActivation}
+                        title={`Switch to ${theme === "dark" ? "standard" : "dark"} theme`}
+                        type="button"
+                    >
+                        {theme === "dark" ? <Sun className="size-5" /> : <Moon className="size-5" />}
+                        <span className="hidden sm:inline">{theme === "dark" ? "Dark" : "Standard"}</span>
+                    </button>
+                </div>
 
                 <span aria-live="polite" className="sr-only">
                     {activeRoute?.label ?? ""} selected
