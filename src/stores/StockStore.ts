@@ -5,6 +5,7 @@ import { makeObservable, observable, runInAction } from "mobx";
 export default class StockStore {
     stockLotReferences: StockLotResponseDto[] = [];
     fetchingStockLots: boolean = false;
+    stockLotsError: string | null = null;
 
     stockLotsApi?: StockLotsApi;
 
@@ -13,6 +14,7 @@ export default class StockStore {
             stockLotReferences: observable,
             stockLotsApi: observable,
             fetchingStockLots: observable,
+            stockLotsError: observable,
         })
 
         runInAction(() => {
@@ -30,14 +32,20 @@ export default class StockStore {
         this.fetchingStockLots = value;
     }
 
+    setStockLotsError = (value: string | null) => {
+        this.stockLotsError = value;
+    }
+
     fetchStockLots = async () => {
         this.setFetchingStockLots(true);
+        this.setStockLotsError(null);
 
         try {
             const newresponse = await this.stockLotsApi?.stockLotsControllerFindAll();
             runInAction(() => (this.stockLotReferences = newresponse ?? MOCKED_STOCK_LOT_REFERENCES))
         } catch {
             runInAction(() => {
+                this.setStockLotsError("No se pudo cargar el stock. Se muestran datos de ejemplo.");
                 if (!this.stockLotReferences.length) {
                     this.stockLotReferences = MOCKED_STOCK_LOT_REFERENCES;
                 }

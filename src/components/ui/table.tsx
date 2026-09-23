@@ -38,17 +38,13 @@ const TableFooter = React.forwardRef<
 ))
 TableFooter.displayName = "TableFooter"
 
-type TableRowProps = Omit<
-  React.HTMLAttributes<HTMLTableRowElement>,
-  "onClick" | "onKeyDown" | "onKeyUp" | "onKeyPress"
->;
+type TableRowProps = React.HTMLAttributes<HTMLTableRowElement>;
 
 const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
   ({ className, ...props }, ref) => (
     <tr
       ref={ref}
-      role="row"
-      className={cn("border-b transition-colors hover:bg-muted/50", className)}
+      className={cn("border-b", className)}
       {...props}
     />
   )
@@ -62,7 +58,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-10 px-2 text-left align-middle font-medium text-muted-foreground has-[[role=checkbox]]:pr-0",
+      "h-10 px-2 text-left align-middle text-sm font-medium leading-5 text-muted-foreground has-[[role=checkbox]]:pr-0",
       className
     )}
     {...props}
@@ -76,7 +72,7 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("p-2 align-middle has-[[role=checkbox]]:pr-0", className)}
+    className={cn("min-h-12 p-2 align-middle text-sm leading-5 whitespace-nowrap has-[[role=checkbox]]:pr-0", className)}
     {...props}
   />
 ))

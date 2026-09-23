@@ -31,11 +31,26 @@ const dataGridFeatures = tableFeatures({
   sortedRowModel: createSortedRowModel(),
 });
 
+const getHeaderLabel = (header: unknown, fallback: string) => {
+  if (typeof header === "string" || typeof header === "number") {
+    return String(header);
+  }
+
+  return fallback;
+};
+
+const getSafeId = (value: string) => value.replace(/[^A-Za-z0-9_-]/g, "-");
+
 export type DataGridColumn<TData extends object> = ColumnDef<
   typeof dataGridFeatures,
   TData,
   unknown
 >;
+
+type DataGridColumnMeta = {
+  className?: string;
+  headerLabel?: string;
+};
 
 export type DataGridProps<TData extends object> = {
   data: TData[];
@@ -162,97 +177,116 @@ export function DataGrid<TData extends object>({
   const endIndex = showPagination ? Math.min((safePage + 1) * pageSize, data.length) : data.length;
 
   return (
-    <div className={cn("overflow-hidden rounded-md border bg-background", className)}>
-      <Table aria-label={ariaLabel}>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder ? null : (
-                    <div className="flex items-center gap-1">
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      {header.column.getCanSort() && (
+    <div className={cn("flex h-full flex-col overflow-hidden rounded-md border bg-background", className)}>
+      <div className="relative w-full flex-1 overflow-auto">
+        <Table aria-label={ariaLabel}>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    aria-sort={header.column.getCanSort()
+                      ? header.column.getIsSorted() === "asc"
+                        ? "ascending"
+                        : header.column.getIsSorted() === "desc"
+                          ? "descending"
+                          : "none"
+                      : undefined}
+                  >
+                    {header.isPlaceholder ? null : (
+                      <div className="flex items-center gap-1">
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.column.getCanSort() && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="size-8"
+                            aria-label={`Sort by ${(
+                              (header.column.columnDef.meta as DataGridColumnMeta | undefined)?.headerLabel
+                              ?? getHeaderLabel(header.column.columnDef.header, header.id)
+                            )}`}
+                            onClick={header.column.getToggleSortingHandler()}
+                            onKeyDown={handleButtonKeyDown}
+                          >
+                            {header.column.getIsSorted() === "asc" ? (
+                              <ArrowUp aria-hidden="true" />
+                            ) : header.column.getIsSorted() === "desc" ? (
+                              <ArrowDown aria-hidden="true" />
+                            ) : (
+                              <ArrowUpDown aria-hidden="true" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.map((row, rowIndex) => {
+              const rowId = resolveRowId(row.original as TData, rowIndex);
+              const isExpanded = expandedRows.has(rowId);
+              const expandedContentId = `expanded-${getSafeId(rowId)}`;
+
+              return (
+                <Fragment key={rowId}>
+                  <TableRow>
+                    {renderExpandedRow && (
+                      <TableCell className="w-12 pr-0">
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon-sm"
-                          className="size-8"
-                          aria-label={`Sort by ${String(header.column.columnDef.header)}`}
-                          onClick={header.column.getToggleSortingHandler()}
+                          aria-label={isExpanded ? "Collapse row" : "Expand row"}
+                          aria-expanded={isExpanded}
+                          aria-controls={expandedContentId}
+                          onClick={() => toggleExpanded(rowId)}
                           onKeyDown={handleButtonKeyDown}
                         >
-                          {header.column.getIsSorted() === "asc" ? (
-                            <ArrowUp aria-hidden="true" />
-                          ) : header.column.getIsSorted() === "desc" ? (
-                            <ArrowDown aria-hidden="true" />
-                          ) : (
-                            <ArrowUpDown aria-hidden="true" />
-                          )}
+                          {isExpanded ? "−" : "+"}
                         </Button>
-                      )}
-                    </div>
-                  )}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row, rowIndex) => {
-            const rowId = resolveRowId(row.original as TData, rowIndex);
-            const isExpanded = expandedRows.has(rowId);
-            const expandedContentId = `expanded-${rowId}`;
-
-            return (
-              <Fragment key={rowId}>
-                <TableRow>
-                  {renderExpandedRow && (
-                    <TableCell className="w-12 pr-0">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={isExpanded ? "Collapse row" : "Expand row"}
-                        aria-expanded={isExpanded}
-                        aria-controls={expandedContentId}
-                        onClick={() => toggleExpanded(rowId)}
-                        onKeyDown={handleButtonKeyDown}
+                      </TableCell>
+                    )}
+                    {row.getAllCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className={cn(
+                          (cell.column.columnDef.meta as { className?: string } | undefined)?.className,
+                        )}
                       >
-                        {isExpanded ? "−" : "+"}
-                      </Button>
-                    </TableCell>
-                  )}
-                  {row.getAllCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-                {isExpanded && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={row.getAllCells().length + 1}
-                      className="bg-muted/20 p-0"
-                    >
-                      <div
-                        id={expandedContentId}
-                        role="region"
-                        aria-label={`${ariaLabel} details`}
-                      >
-                        {renderExpandedRow?.(row.original as TData)}
-                      </div>
-                    </TableCell>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
                   </TableRow>
-                )}
-              </Fragment>
-            );
-          })}
-        </TableBody>
-      </Table>
+                  {isExpanded && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={row.getAllCells().length + 1}
+                        className="bg-muted/20 p-0"
+                      >
+                        <div
+                          id={expandedContentId}
+                          role="region"
+                          aria-label={`${ariaLabel} details`}
+                        >
+                          {renderExpandedRow?.(row.original as TData)}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </Fragment>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
 
       {showPagination && (
-        <div className="flex items-center justify-between gap-3 border-t bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
+        <div className="mt-auto flex items-center justify-between gap-3 border-t bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
           <div role="status" aria-live="polite" aria-atomic="true">
             Showing {startIndex}-{endIndex} of {data.length}
           </div>
