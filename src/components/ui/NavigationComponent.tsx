@@ -79,7 +79,7 @@ export const NavigationComponent = () => {
     })
 
     return (
-        <header className="border-b border-(--nav-border) bg-(--nav-background) text-(--nav-muted) shadow-[0_1px_0_var(--nav-shadow)]">
+        <header className="mixzi-mobile-nav fixed inset-x-0 top-0 z-50 w-full border-b border-(--nav-border) bg-(--nav-background)/78 text-(--nav-muted) shadow-[0_1px_0_var(--nav-shadow)] backdrop-blur-xl sm:static sm:bg-(--nav-background)">
             <div className="relative flex min-h-19 items-center gap-2 px-4 sm:gap-3 sm:px-6">
                 <NavLink
                     className="mr-1 shrink-0 leading-none"
