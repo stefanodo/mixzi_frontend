@@ -263,6 +263,12 @@ body[data-theme="dark"] {
   opacity: 0.6;
 }
 
+.mixzi-logo {
+  transform-origin: top center;
+  transform: perspective(220px) rotateZ(var(--logo-bend-z, 0deg)) rotateY(var(--logo-bend-y, 0deg)) skewX(var(--logo-bend-skew, 0deg));
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 [data-slot="card"] {
   border: 0;
 }
