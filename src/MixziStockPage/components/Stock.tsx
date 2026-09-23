@@ -488,7 +488,8 @@ export const Stock = observer(() => {
                         {["Frescos", "Producciones", "Congelados", "Secos", "Limpieza", "Pend. clasificar", "Sin ubicar", "Stock actual"].map((block) => (
                             <Button
                                 key={block}
-                                variant={activeBlock === block ? "default" : "outline"}
+                                variant="outline"
+                                className={activeBlock === block ? "mixzi-active-block border-(--nav-active-border) bg-(--nav-active) text-(--nav-active-text) hover:bg-(--nav-active) hover:text-(--nav-active-text)" : undefined}
                                 aria-pressed={activeBlock === block}
                                 onClick={() => setActiveBlock(block)}
                                 onKeyDown={(event) => handleKeyboardActivation(event, () => setActiveBlock(block))}
