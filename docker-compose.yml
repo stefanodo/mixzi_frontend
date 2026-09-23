@@ -9,6 +9,7 @@ services:
         VITE_APP_MOCKED_VALUES: ${VITE_APP_MOCKED_VALUES}
         VITE_MIXZI_AUTH_BASE: ${VITE_MIXZI_AUTH_BASE}
     image: mixzi-frontend:latest
+    pull_policy: build
     container_name: mixzi-frontend
     restart: unless-stopped
     ports:
