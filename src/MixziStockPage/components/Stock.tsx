@@ -574,7 +574,7 @@ export const Stock = observer(() => {
                         >
                             <div
                                 ref={movementDialogRef}
-                                className="stock-modal-sheet relative max-h-[90vh] w-full overflow-y-auto rounded-xl bg-background shadow-xl"
+                                className="stock-modal-sheet relative max-h-[56vh] w-full overflow-hidden rounded-xl bg-background shadow-xl"
                                 role="dialog"
                                 aria-modal="true"
                                 aria-labelledby="mobile-movement-form-title"
@@ -582,17 +582,17 @@ export const Stock = observer(() => {
                                 <Button
                                     ref={movementCloseRef}
                                     type="button"
-                                    variant="ghost"
+                                    variant="glass"
                                     size="icon"
                                     aria-label="Cerrar formulario de movimiento"
                                     title="Cerrar"
-                                    className="absolute top-3 right-3 z-10"
+                                    className="mixzi-mobile-glass-control absolute top-3 right-3 z-10 rounded-full"
                                     onClick={() => setIsMovementFormOpen(false)}
                                     onKeyDown={(event) => handleKeyboardActivation(event, () => setIsMovementFormOpen(false))}
                                 >
                                     <X />
                                 </Button>
-                                <div className="pb-6 pt-6">
+                                <div className="max-h-[56vh] overflow-y-auto pb-6 pt-6">
                                     <h2 id="mobile-movement-form-title" className="mb-4 ml-6 text-lg font-semibold">
                                         Registrar Movimiento
                                     </h2>
