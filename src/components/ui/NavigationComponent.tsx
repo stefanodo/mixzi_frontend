@@ -78,9 +78,9 @@ export const NavigationComponent = () => {
         const horizontalPosition = ((event.clientX - bounds.left) / bounds.width - 0.5) * 2
         const verticalPosition = ((event.clientY - bounds.top) / bounds.height - 0.5) * 2
 
-        event.currentTarget.style.setProperty("--logo-bend-y", `${horizontalPosition * -24}deg`)
-        event.currentTarget.style.setProperty("--logo-bend-z", `${horizontalPosition * 8 + verticalPosition * 5}deg`)
-        event.currentTarget.style.setProperty("--logo-bend-skew", `${horizontalPosition * -8}deg`)
+        event.currentTarget.style.setProperty("--logo-bend-y", `${horizontalPosition * 24}deg`)
+        event.currentTarget.style.setProperty("--logo-bend-z", `${horizontalPosition * -8 + verticalPosition * -5}deg`)
+        event.currentTarget.style.setProperty("--logo-bend-skew", `${horizontalPosition * 8}deg`)
     }
 
     const handleLogoPointerLeave = (event: PointerEvent<HTMLAnchorElement>) => {
