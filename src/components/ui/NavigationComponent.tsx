@@ -98,9 +98,8 @@ export const NavigationComponent = () => {
         if (!isDragging) return
 
         const deltaX = event.clientX - dragStart.x
-        const deltaY = event.clientY - dragStart.y
 
-        setDragOffset({ x: deltaX, y: deltaY })
+        setDragOffset({ x: deltaX, y: 0 })
     }
 
     const handleLogoDragEnd = () => {
