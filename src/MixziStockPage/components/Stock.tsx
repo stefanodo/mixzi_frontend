@@ -556,6 +556,7 @@ export const Stock = observer(() => {
                 <>
                     <Button
                         type="button"
+                        variant="glass"
                         size="icon"
                         aria-label="Añadir movimiento"
                         title="Añadir movimiento"

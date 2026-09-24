@@ -13,6 +13,34 @@ export const MOCKED_WAREHOUSES = MOCKED_LOCATIONS.flatMap((location) => [
   `${location} - Camara`,
 ]);
 
+export const MOCKED_ARTICLES = [
+  "Tomate",
+  "Leche entera",
+  "Arroz",
+  "Pechuga de pollo",
+  "Aceite de oliva",
+  "Detergente cocina",
+  "Salsa de cocina",
+  "Especias mezcla",
+  "Material de limpieza",
+] as const;
+
+export const MOCKED_TYPES = [
+  "Entrada",
+  "Salida",
+  "Traslado",
+  "Ajuste",
+] as const;
+
+export const MOCKED_UNITS = [
+  "g",
+  "Kg",
+  "manojo",
+  "ml",
+  "l",
+  "ud",
+] as const;
+
 export const MOCKED_CATALOG_REFERENCES: ItemResponseDto[] = [
   {
     id: "item-001",
@@ -132,3 +160,5 @@ export const MOCKED_CATALOG_REFERENCES: ItemResponseDto[] = [
     updatedAt: new Date("2025-09-20T08:10:00.000Z"),
   },
 ];
+
+export const MOCKED_ARTICLE_NAMES = MOCKED_CATALOG_REFERENCES.map((item) => item.name);
