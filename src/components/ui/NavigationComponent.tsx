@@ -1,5 +1,5 @@
-import { Menu, Moon, Sun, X } from "lucide-react"
-import { type KeyboardEvent, type PointerEvent, useEffect, useState } from "react"
+import { Heart, Menu, Moon, Sun, X } from "lucide-react"
+import { type KeyboardEvent, type PointerEvent, useEffect, useRef, useState } from "react"
 import { matchPath, NavLink, useLocation } from "react-router-dom"
 import { RoutePaths, routes } from "../../router/routes"
 import { cn } from "../../lib/utils"
@@ -23,6 +23,10 @@ export const NavigationComponent = () => {
     const deviceType = useDeviceType()
     const { theme, toggleTheme } = useTheme()
     const [isMenuOpen, setIsMenuOpen] = useState(false)
+    const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+    const [isDragging, setIsDragging] = useState(false)
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+    const logoLinkRef = useRef<HTMLAnchorElement>(null)
     const isMobile = deviceType === "mobile"
     const activeRoute = navigationRoutes.find((route) =>
         matchPath({ path: route.path ?? "", end: true }, location.pathname),
@@ -31,6 +35,17 @@ export const NavigationComponent = () => {
     useEffect(() => {
         setIsMenuOpen(false)
     }, [location.pathname])
+
+    useEffect(() => {
+        if (!isDragging) return
+
+        const handlePointerUp = () => {
+            handleLogoDragEnd()
+        }
+
+        document.addEventListener("pointerup", handlePointerUp)
+        return () => document.removeEventListener("pointerup", handlePointerUp)
+    }, [isDragging])
 
     const handleMenuToggle = () => {
         setIsMenuOpen((open) => !open)
@@ -74,6 +89,25 @@ export const NavigationComponent = () => {
         event.currentTarget.style.removeProperty("--logo-bend-skew")
     }
 
+    const handleLogoDragStart = (event: PointerEvent<HTMLAnchorElement>) => {
+        setIsDragging(true)
+        setDragStart({ x: event.clientX, y: event.clientY })
+    }
+
+    const handleLogoDragMove = (event: PointerEvent<HTMLAnchorElement>) => {
+        if (!isDragging) return
+
+        const deltaX = event.clientX - dragStart.x
+        const deltaY = event.clientY - dragStart.y
+
+        setDragOffset({ x: deltaX, y: deltaY })
+    }
+
+    const handleLogoDragEnd = () => {
+        setIsDragging(false)
+        setDragOffset({ x: 0, y: 0 })
+    }
+
     const navigationLinks = navigationRoutes.map((route) => {
         const isActive = Boolean(matchPath({ path: route.path ?? "", end: true }, location.pathname))
 
@@ -98,12 +132,41 @@ export const NavigationComponent = () => {
     return (
         <header className="mixzi-mobile-nav fixed inset-x-0 top-0 z-50 w-full bg-(--nav-background)/78 text-(--nav-muted) shadow-[0_1px_0_var(--nav-shadow)] backdrop-blur-xl sm:static sm:bg-(--nav-background)">
             <div className="relative flex min-h-19 items-center gap-2 px-4 sm:gap-3 sm:px-6">
+                {isDragging && (
+                    <div className="absolute flex flex-col items-center justify-center gap-1 pointer-events-none z-0" style={{ left: "calc(1rem + 15px)", top: "50%", transform: "translateY(-50%)" }}>
+                        <Heart
+                            size={18}
+                            fill="#EF4444"
+                            stroke="#EF4444"
+                            strokeWidth={1}
+                        />
+                        <div className="flex flex-col text-center text-(--nav-text) leading-tight" style={{ fontSize: "9px" }}>
+                            <div>Made with Love</div>
+                            <div>by mixzi team!</div>
+                        </div>
+                    </div>
+                )}
                 <NavLink
+                    ref={logoLinkRef}
                     className="mixzi-logo-link mr-1 shrink-0 self-start leading-none"
                     to={RoutePaths.MixziDashboard}
                     onKeyDown={handleKeyboardActivation}
-                    onPointerMove={handleLogoPointerMove}
                     onPointerLeave={handleLogoPointerLeave}
+                    onPointerDown={handleLogoDragStart}
+                    onPointerMove={(e) => {
+                        handleLogoPointerMove(e)
+                        handleLogoDragMove(e)
+                    }}
+                    onPointerUp={handleLogoDragEnd}
+                    style={{
+                        cursor: isDragging ? "grabbing" : "grab",
+                        transform: isDragging
+                            ? `translate(${dragOffset.x}px, ${dragOffset.y}px)`
+                            : "translate(0, 0)",
+                        transition: !isDragging ? "transform 0.2s ease-out" : "none",
+                        position: "relative",
+                        zIndex: 10,
+                    }}
                 >
                     <img src={mixziLogo} alt="mixzi" className="mixzi-logo block h-17 w-auto self-start object-contain" />
                 </NavLink>
