@@ -715,16 +715,16 @@ export const Stock = observer(() => {
             )}
 
             {/* TABLA DE ARTÍCULOS Y FORMULARIO */}
-            <div className={activeBlock === "Frescos" ? "min-w-0 md:grid md:items-start md:grid-cols-[340px_minmax(0,1fr)] md:gap-6" : ""}>
+            <div className={activeBlock === "Frescos" ? "min-w-0 md:grid md:items-stretch md:grid-cols-[340px_minmax(0,1fr)] md:gap-6" : ""}>
                 {/* Formulario en desktop para Frescos */}
                 {activeBlock === "Frescos" && (
-                    <div className="hidden min-w-0 md:block md:w-[340px] md:min-w-[340px] md:max-w-[340px] sticky top-4">
-                        <StockMovementForm />
+                    <div className="hidden min-w-0 md:flex md:flex-col md:w-[340px] md:min-w-[340px] md:max-w-[340px] h-full">
+                        <StockMovementForm className="h-full" />
                     </div>
                 )}
 
                 {/* DataGrid principal */}
-                <Card className="flex min-h-88 min-w-0 flex-col overflow-hidden border border-border/80 shadow-xs">
+                <Card className="flex min-h-88 min-w-0 flex-col overflow-hidden border border-border/80 shadow-xs h-full justify-between">
                     <div className="flex flex-1 flex-col">
                         <DataGrid
                             className="mx-3 sm:mx-5 mb-0 flex-1 pb-0"
