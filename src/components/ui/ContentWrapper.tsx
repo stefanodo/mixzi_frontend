@@ -4,7 +4,7 @@ interface ContentWrapperProps {
 
 export const ContentWrapper = ({ children }: ContentWrapperProps) => {
     return (
-        <div className="flex min-h-[calc(100vh-64px)] overflow-y-auto pb-24 sm:pb-6">
+        <div className="flex min-h-[calc(100vh-64px)] overflow-y-auto pb-8 sm:pb-6">
             {children}
         </div>
     );
