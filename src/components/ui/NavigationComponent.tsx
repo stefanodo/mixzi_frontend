@@ -172,15 +172,17 @@ export const NavigationComponent = () => {
                 {/* LOGO INTERACTIVO CON EASTER EGG DE HOJA LEVANTABLE */}
                 {/* El easter egg está justo debajo del logo, fijado y exactamente con sus mismas dimensiones */}
                 <div className="relative inline-flex items-center shrink-0">
-                    {/* EASTER EGG FIJO DEBAJO DEL LOGO (mismo tamaño, no sobresale, no se mueve) */}
+                    {/* EASTER EGG FIJO DEBAJO DEL LOGO (reducido 30%, mismo tamaño del logo, no sobresale) */}
                     <div
                         aria-hidden="true"
-                        className="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center rounded-lg border border-red-500/20 bg-red-500/5 px-1 py-0.5 text-center select-none overflow-hidden"
+                        className="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center rounded-lg border border-red-500/15 bg-red-500/5 p-0.5 text-center select-none overflow-hidden"
                     >
-                        <Heart className="size-3.5 text-rose-500 fill-rose-500 animate-pulse" strokeWidth={1} />
-                        <div className="mt-0.5 flex flex-col leading-none text-foreground/80 font-medium text-[8px] sm:text-[9px] tracking-tight">
-                            <span>Made with Love</span>
-                            <span className="text-[7.5px] sm:text-[8px] text-muted-foreground">by mixzi team!</span>
+                        <div className="flex flex-col items-center justify-center scale-[0.70] origin-center">
+                            <Heart className="size-3 text-rose-500 fill-rose-500 animate-pulse" strokeWidth={1} />
+                            <div className="mt-0.5 flex flex-col leading-tight text-foreground/85 font-semibold text-[8px] tracking-tight whitespace-nowrap">
+                                <span>Made with Love</span>
+                                <span className="text-[7px] text-muted-foreground font-normal">by mixzi team!</span>
+                            </div>
                         </div>
                     </div>
 

@@ -17,7 +17,8 @@ import {
   Filter,
   Flame,
   ChevronRight,
-  RefreshCw
+  RefreshCw,
+  Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -483,9 +484,8 @@ export const Stock = observer(() => {
                             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                                 Gestión de Stock & Inventario
                             </h1>
-                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                En directo
+                            <span className="text-xs text-muted-foreground flex items-center gap-1 font-normal">
+                                <Clock className="w-3.5 h-3.5" /> Actualizado hace 2 minutos
                             </span>
                         </div>
                         <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
