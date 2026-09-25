@@ -1,10 +1,6 @@
 /**
- * Restablece automáticamente el zoom del viewport en dispositivos móviles
- * cuando el usuario termina, cierra o cancela la interacción con inputs de texto.
- * 
- * Permite que el sistema operativo haga zoom accesible mientras el usuario escribe,
- * pero garantiza que al perder el foco (blur/cancelar/escapar) la vista vuelva al 100%
- * sin dejar la pantalla desplazada ni ampliada permanentemente.
+ * Restablece automáticamente el zoom y encuadre del viewport en móviles
+ * tan pronto como se cierra el teclado virtual.
  */
 
 export function setupMobileViewportZoomReset(): () => void {
@@ -12,35 +8,63 @@ export function setupMobileViewportZoomReset(): () => void {
     return () => {};
   }
 
-  const resetViewport = () => {
-    // Solo actuar si estamos en un contexto táctil o pantalla móvil/tablet
-    const isTouchOrMobile =
-      window.innerWidth <= 1024 ||
-      "ontouchstart" in window ||
-      navigator.maxTouchPoints > 0;
+  const resetViewportZoom = () => {
+    const meta = document.querySelector<HTMLMetaElement>("meta[name=\"viewport\"]");
+    if (!meta) return;
 
-    if (!isTouchOrMobile) return;
-
-    const viewportMeta = document.querySelector<HTMLMetaElement>("meta[name="viewport"]");
-    if (!viewportMeta) return;
-
-    const standardContent = "width=device-width, initial-scale=1.0";
-    const lockedContent = "width=device-width, initial-scale=1.0, maximum-scale=1.0";
-
-    // Restablece el desplazamiento horizontal si el zoom desalineó la página
+    // 1. Corregir cualquier paneo horizontal provocado por el zoom
     if (window.scrollX !== 0) {
       window.scrollTo({ left: 0, top: window.scrollY, behavior: "instant" as ScrollBehavior });
     }
 
-    // Forzar temporalmente maximum-scale=1.0 para que WebKit/Blink reseteen la escala visual a 1.0
-    viewportMeta.setAttribute("content", lockedContent);
+    // 2. Forzar el repliegue de la escala visual a 1.0 (WebKit / Blink)
+    // El uso temporal de user-scalable=no y maximum-scale=1.0 obliga a iOS a volver al 100%
+    meta.setAttribute("content", "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no");
 
-    // Restaurar inmediatamente después para preservar la accesibilidad y el pellizco manual
+    // 3. Restaurar después de que el navegador aplique el nuevo encuadre
     window.setTimeout(() => {
-      viewportMeta.setAttribute("content", standardContent);
-    }, 150);
+      meta.setAttribute("content", "width=device-width, initial-scale=1.0");
+    }, 300);
   };
 
+  const cleanups: (() => void)[] = [];
+
+  // MÉTODO PRINCIPAL: Detección directa mediante visualViewport al cerrar el teclado
+  if (window.visualViewport) {
+    let lastHeight = window.visualViewport.height;
+
+    const handleViewportResize = () => {
+      if (!window.visualViewport) return;
+      const currentHeight = window.visualViewport.height;
+
+      // Si la altura del viewport visible aumenta significativamente (>= 140px),
+      // significa que el teclado en pantalla se ha cerrado
+      const keyboardClosed = currentHeight > lastHeight + 140;
+      lastHeight = currentHeight;
+
+      if (keyboardClosed) {
+        // Desenfocar si aún quedaba algún elemento activo
+        const active = document.activeElement;
+        if (
+          active instanceof HTMLInputElement ||
+          active instanceof HTMLTextAreaElement ||
+          active instanceof HTMLSelectElement
+        ) {
+          active.blur();
+        }
+
+        // Dar un breve margen para que termine la animación física del teclado
+        window.setTimeout(() => {
+          resetViewportZoom();
+        }, 120);
+      }
+    };
+
+    window.visualViewport.addEventListener("resize", handleViewportResize);
+    cleanups.push(() => window.visualViewport?.removeEventListener("resize", handleViewportResize));
+  }
+
+  // MÉTODO SECUNDARIO DE RESPALDO: focusout cuando el usuario sale del input
   const handleFocusOut = (event: FocusEvent) => {
     const target = event.target as HTMLElement | null;
     if (!target) return;
@@ -48,45 +72,28 @@ export function setupMobileViewportZoomReset(): () => void {
     const isInput =
       target instanceof HTMLInputElement ||
       target instanceof HTMLTextAreaElement ||
-      target instanceof HTMLSelectElement ||
-      target.isContentEditable;
+      target instanceof HTMLSelectElement;
 
     if (!isInput) return;
 
-    // Pequeña espera para verificar si el foco saltó a otro input
+    // Si pasaron 200ms y no hay otro input con foco, asegurar que el zoom vuelva a 1.0
     window.setTimeout(() => {
       const active = document.activeElement;
-      const isStillEditing =
+      const isAnotherInput =
         active instanceof HTMLInputElement ||
         active instanceof HTMLTextAreaElement ||
-        active instanceof HTMLSelectElement ||
-        (active && (active as HTMLElement).isContentEditable);
+        active instanceof HTMLSelectElement;
 
-      if (!isStillEditing) {
-        resetViewport();
+      if (!isAnotherInput) {
+        resetViewportZoom();
       }
-    }, 80);
-  };
-
-  // Al presionar Escape o cancelar con teclado en un input, forzar desenfoque y reseteo
-  const handleKeyDown = (event: KeyboardEvent) => {
-    if (event.key === "Escape") {
-      const active = document.activeElement as HTMLElement | null;
-      if (
-        active instanceof HTMLInputElement ||
-        active instanceof HTMLTextAreaElement ||
-        active instanceof HTMLSelectElement
-      ) {
-        active.blur();
-      }
-    }
+    }, 200);
   };
 
   document.addEventListener("focusout", handleFocusOut, true);
-  document.addEventListener("keydown", handleKeyDown, true);
+  cleanups.push(() => document.removeEventListener("focusout", handleFocusOut, true));
 
   return () => {
-    document.removeEventListener("focusout", handleFocusOut, true);
-    document.removeEventListener("keydown", handleKeyDown, true);
+    cleanups.forEach((cleanup) => cleanup());
   };
 }
