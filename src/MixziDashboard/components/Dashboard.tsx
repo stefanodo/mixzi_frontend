@@ -35,7 +35,7 @@ export const Dashboard = () => {
 
   // Suggested intents for the interactive copilot search
   const quickIntents = [
-    { label: "+ Agregar artículo", action: () => navigate(RoutePaths.MixziStock) },
+    { label: "+ Agregar artículo", action: () => navigate(`${RoutePaths.MixziStock}?action=add-item&block=Frescos`, { state: { action: "add-item", block: "Frescos" } }) },
     { label: "🚨 6 productos críticos", action: () => setActiveTab("critical") },
     { label: "📊 Distribución de costes", action: () => setActiveTab("analytics") },
     { label: "⚡ Modo Asistente", action: () => setActiveTab("wizard") },
@@ -74,7 +74,7 @@ export const Dashboard = () => {
           </Button>
           <Button 
             size="sm" 
-            onClick={() => navigate(RoutePaths.MixziStock)}
+            onClick={() => navigate(`${RoutePaths.MixziStock}?action=add-item&block=Frescos`, { state: { action: "add-item", block: "Frescos" } })}
             className="gap-1.5 bg-primary text-primary-foreground text-xs sm:text-sm font-medium shadow-sm hover:opacity-95"
           >
             <PlusCircle className="w-4 h-4" />
@@ -286,7 +286,7 @@ export const Dashboard = () => {
                 </CardHeader>
                 <CardContent className="pt-0">
                   <Button 
-                    onClick={() => navigate(RoutePaths.MixziStock)}
+                    onClick={() => navigate(`${RoutePaths.MixziStock}?action=add-item&block=Frescos`, { state: { action: "add-item", block: "Frescos" } })}
                     className="w-full gap-2 font-semibold shadow-sm text-sm"
                   >
                     <span>Ir a Stock para Agregar</span>
