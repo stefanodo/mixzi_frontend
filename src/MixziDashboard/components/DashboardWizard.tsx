@@ -41,7 +41,7 @@ export const DashboardWizard: React.FC = () => {
       primary: true,
       badge: "Acción Prioritaria",
       actionText: "Ir a Stock para Agregar",
-      onClick: () => navigate(RoutePaths.MixziStock),
+      onClick: () => navigate(`${RoutePaths.MixziStock}?action=add-item&block=Frescos`, { state: { action: "add-item", block: "Frescos" } }),
     },
     {
       id: "check-stock-alerts",
