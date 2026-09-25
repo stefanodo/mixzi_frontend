@@ -260,7 +260,7 @@ export const DashboardWizard: React.FC = () => {
               )}
 
               <CardHeader className="pb-3 space-y-2">
-                <div className="flex items-center justify-between gap-2 pr-4">
+                <div className="flex items-center justify-between gap-2 pr-4 h-6">
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                       {q.categoryLabel}
@@ -285,7 +285,7 @@ export const DashboardWizard: React.FC = () => {
                 </div>
 
                 <div className="flex items-start gap-3 pt-1">
-                  <div className={`p-2.5 rounded-xl shrink-0 transition-transform group-hover:scale-105 ${
+                  <div className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center transition-transform group-hover:scale-105 ${
                     isCompleted
                       ? "bg-muted text-muted-foreground"
                       : q.impactType === "danger"
