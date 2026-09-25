@@ -16,6 +16,7 @@ type StockSelectableProps = {
 
 type StockMovementFormProps = {
     showTitle?: boolean;
+    className?: string;
 };
 
 function StockArticleAutocomplete({ id, name, placeholder, options }: StockSelectableProps) {
@@ -196,13 +197,13 @@ function StockSelectable({ id, name, placeholder, options }: StockSelectableProp
         </div>
     );
 }
-export function StockMovementForm({ showTitle = true }: StockMovementFormProps) {
+export function StockMovementForm({ showTitle = true, className }: StockMovementFormProps) {
     return (
         <>
-            <Card className="w-full min-w-0 rounded-none border-0 bg-transparent py-0 shadow-none md:w-[320px] md:min-w-[320px] md:max-w-[320px] md:rounded-xl md:border md:bg-card md:py-6 md:shadow-sm">
+            <Card className={`w-full min-w-0 rounded-none border-0 bg-transparent py-0 shadow-none md:w-full md:rounded-xl md:border md:bg-card md:py-6 md:shadow-sm md:h-full md:flex md:flex-col ${className || ""}`.trim()}>
                 {showTitle && <CardTitle className="ml-6">Registrar Movimiento</CardTitle>}
-                <CardContent>
-                    <Card className="min-w-0 w-full">
+                <CardContent className="md:flex-1 md:flex md:flex-col p-4 md:p-6 pt-0">
+                    <Card className="min-w-0 w-full md:flex-1 md:flex md:flex-col justify-between">
                         <CardContent className="min-w-0 md:pr-8">
                             <CardTitle className="mb-4">¿Dónde?</CardTitle>
                             <Separator />
