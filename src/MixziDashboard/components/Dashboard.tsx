@@ -47,10 +47,6 @@ export const Dashboard = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Servicio Activo
-            </span>
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Clock className="w-3.5 h-3.5" /> Actualizado hace 2m
             </span>

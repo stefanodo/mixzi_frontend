@@ -22,6 +22,7 @@ export const NavigationComponent = () => {
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
     const [isDragging, setIsDragging] = useState(false)
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+    const [hasDragged, setHasDragged] = useState(false)
     const logoLinkRef = useRef<HTMLAnchorElement>(null)
 
     const isDashboardActive = Boolean(matchPath({ path: RoutePaths.MixziDashboard, end: true }, location.pathname))
@@ -90,7 +91,8 @@ export const NavigationComponent = () => {
         if (!isDragging) return
 
         const handlePointerUp = () => {
-            handleLogoDragEnd()
+            setIsDragging(false)
+            setDragOffset({ x: 0, y: 0 })
         }
 
         document.addEventListener("pointerup", handlePointerUp)
@@ -115,9 +117,9 @@ export const NavigationComponent = () => {
         const horizontalPosition = ((event.clientX - bounds.left) / bounds.width - 0.5) * 2
         const verticalPosition = ((event.clientY - bounds.top) / bounds.height - 0.5) * 2
 
-        event.currentTarget.style.setProperty("--logo-bend-y", `${horizontalPosition * 24}deg`)
-        event.currentTarget.style.setProperty("--logo-bend-z", `${horizontalPosition * -8 + verticalPosition * -5}deg`)
-        event.currentTarget.style.setProperty("--logo-bend-skew", `${horizontalPosition * 8}deg`)
+        event.currentTarget.style.setProperty("--logo-bend-y", `${horizontalPosition * 20}deg`)
+        event.currentTarget.style.setProperty("--logo-bend-z", `${horizontalPosition * -6 + verticalPosition * -4}deg`)
+        event.currentTarget.style.setProperty("--logo-bend-skew", `${horizontalPosition * 6}deg`)
     }
 
     const handleLogoPointerLeave = (event: PointerEvent<HTMLAnchorElement>) => {
@@ -128,43 +130,71 @@ export const NavigationComponent = () => {
 
     const handleLogoDragStart = (event: PointerEvent<HTMLAnchorElement>) => {
         setIsDragging(true)
+        setHasDragged(false)
         setDragStart({ x: event.clientX, y: event.clientY })
+        setDragOffset({ x: 0, y: 0 })
+        try {
+            event.currentTarget.setPointerCapture(event.pointerId)
+        } catch {
+            // fallback
+        }
     }
 
     const handleLogoDragMove = (event: PointerEvent<HTMLAnchorElement>) => {
         if (!isDragging) return
 
         const deltaX = event.clientX - dragStart.x
-        setDragOffset({ x: deltaX, y: 0 })
+        const deltaY = event.clientY - dragStart.y
+
+        if (Math.hypot(deltaX, deltaY) > 5) {
+            setHasDragged(true)
+        }
+
+        setDragOffset({ x: deltaX, y: deltaY })
     }
 
-    const handleLogoDragEnd = () => {
-        setIsDragging(false)
-        setDragOffset({ x: 0, y: 0 })
+    const handleLogoDragEnd = (event: PointerEvent<HTMLAnchorElement>) => {
+        if (isDragging) {
+            setIsDragging(false)
+            setDragOffset({ x: 0, y: 0 })
+            try {
+                event.currentTarget.releasePointerCapture(event.pointerId)
+            } catch {
+                // fallback
+            }
+        }
     }
 
     return (
         <header className="sticky top-0 z-40 w-full border-b border-border/70 bg-background/90 backdrop-blur-xl shadow-2xs transition-colors">
             {/* BARRA SUPERIOR PRINCIPAL */}
             <div className="mx-auto flex h-14 sm:h-16 w-full max-w-7xl items-center justify-between px-3.5 sm:px-6">
-                {/* LOGO INTERACTIVO Y BADGE OPERATIVO */}
-                <div className="relative flex items-center gap-2.5">
-                    {isDragging && (
-                        <div
-                            className="pointer-events-none absolute z-0 flex flex-col items-center justify-center gap-1"
-                            style={{ left: "calc(1rem + 15px)", top: "50%", transform: "translateY(-50%)" }}
-                        >
-                            <Heart size={18} fill="#EF4444" stroke="#EF4444" strokeWidth={1} />
-                            <div className="flex flex-col text-center text-(--nav-text) leading-tight" style={{ fontSize: "9px" }}>
-                                <div>Made with Love</div>
-                                <div>by mixzi team!</div>
-                            </div>
+                {/* LOGO INTERACTIVO CON EASTER EGG DE HOJA LEVANTABLE */}
+                {/* El easter egg está justo debajo del logo, fijado y exactamente con sus mismas dimensiones */}
+                <div className="relative inline-flex items-center shrink-0">
+                    {/* EASTER EGG FIJO DEBAJO DEL LOGO (mismo tamaño, no sobresale, no se mueve) */}
+                    <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center rounded-lg border border-red-500/20 bg-red-500/5 px-1 py-0.5 text-center select-none overflow-hidden"
+                    >
+                        <Heart className="size-3.5 text-rose-500 fill-rose-500 animate-pulse" strokeWidth={1} />
+                        <div className="mt-0.5 flex flex-col leading-none text-foreground/80 font-medium text-[8px] sm:text-[9px] tracking-tight">
+                            <span>Made with Love</span>
+                            <span className="text-[7.5px] sm:text-[8px] text-muted-foreground">by mixzi team!</span>
                         </div>
-                    )}
+                    </div>
+
+                    {/* LOGOTIPO QUE ACTÚA COMO HOJA QUE SE LEVANTA Y REVELA LO QUE HAY DEBAJO */}
                     <NavLink
                         ref={logoLinkRef}
-                        className="mixzi-logo-link mr-1 shrink-0 self-center leading-none"
+                        className="mixzi-logo-link relative z-10 block shrink-0 select-none bg-background/95 rounded-lg"
                         to={RoutePaths.MixziDashboard}
+                        onClick={(e) => {
+                            if (hasDragged) {
+                                e.preventDefault()
+                                setHasDragged(false)
+                            }
+                        }}
                         onKeyDown={handleKeyboardActivation}
                         onPointerLeave={handleLogoPointerLeave}
                         onPointerDown={handleLogoDragStart}
@@ -176,22 +206,21 @@ export const NavigationComponent = () => {
                         style={{
                             cursor: isDragging ? "grabbing" : "grab",
                             transform: isDragging
-                                ? `translate(${dragOffset.x}px, ${dragOffset.y}px)`
+                                ? `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${dragOffset.x * 0.08}deg) scale(1.03)`
                                 : "translate(0, 0)",
-                            transition: !isDragging ? "transform 0.2s ease-out" : "none",
-                            position: "relative",
-                            zIndex: 10,
+                            boxShadow: isDragging ? "0 10px 25px -5px rgba(0, 0, 0, 0.25)" : "none",
+                            transition: !isDragging ? "transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s" : "none",
+                            touchAction: "none",
                         }}
+                        title="mixzi (¡levanta el logo!)"
                     >
-                        <img src={mixziLogo} alt="mixzi" className="mixzi-logo block h-8 sm:h-10 w-auto object-contain" />
+                        <img
+                            src={mixziLogo}
+                            alt="mixzi"
+                            draggable={false}
+                            className="mixzi-logo block h-8 sm:h-10 w-auto object-contain pointer-events-none"
+                        />
                     </NavLink>
-
-                    {/* BADGE DE SERVICIO EN VIVO (Visible en desktop y móvil) */}
-                    <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                        <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="hidden sm:inline">Servicio Activo</span>
-                        <span className="sm:hidden">En vivo</span>
-                    </div>
                 </div>
 
                 {/* NAVEGACIÓN SEGMENTADA EN DESKTOP CON PÍLDORA ANIMADA FLUIDA */}
@@ -246,12 +275,18 @@ export const NavigationComponent = () => {
                     </div>
                 </nav>
 
-                {/* ACCIONES SOLO PARA DESKTOP (Ocultos en móvil) */}
-                <div className="hidden md:flex items-center gap-2.5">
+                {/* ACCIONES Y BADGE EN VIVO SITUADO A LA DERECHA */}
+                <div className="flex items-center gap-2 sm:gap-2.5">
+                    {/* BADGE DE SERVICIO EN VIVO (A la derecha en desktop y móvil) */}
+                    <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] sm:text-xs font-semibold text-emerald-600 dark:text-emerald-400 select-none shadow-2xs">
+                        <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>En vivo</span>
+                    </div>
+
                     {/* Botón Desktop Agregar Insumo */}
                     <NavLink
                         to="/mixzistock?action=add-item&block=Frescos"
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-xs hover:opacity-90 active:scale-98 transition-all"
+                        className="hidden md:inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-xs hover:opacity-90 active:scale-98 transition-all"
                     >
                         <Plus className="size-3.5" />
                         <span>+ Movimiento</span>
@@ -261,7 +296,7 @@ export const NavigationComponent = () => {
                     <button
                         aria-label={`Cambiar a modo ${theme === "dark" ? "claro" : "oscuro"}`}
                         aria-pressed={theme === "dark"}
-                        className="inline-flex size-9 items-center justify-center rounded-lg border border-border/80 bg-card text-foreground transition-all hover:bg-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary shadow-2xs"
+                        className="hidden md:inline-flex size-9 items-center justify-center rounded-lg border border-border/80 bg-card text-foreground transition-all hover:bg-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary shadow-2xs"
                         onClick={handleThemeToggle}
                         onKeyDown={handleThemeKeyboardActivation}
                         title={`Cambiar a modo ${theme === "dark" ? "claro" : "oscuro"}`}
