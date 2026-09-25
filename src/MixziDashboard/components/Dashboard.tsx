@@ -1,3 +1,5 @@
+import { DashboardWizard } from "./DashboardWizard";
+
 export const Dashboard = () => {
-    return <div>Dashboard Content</div>;
+  return <DashboardWizard />;
 };
