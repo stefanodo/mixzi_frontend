@@ -297,37 +297,37 @@ export const Dashboard = () => {
 
               {/* Secondary fast cards */}
               <div className="grid grid-cols-1 gap-3">
-                <Card 
+                <div 
                   onClick={() => setActiveTab("critical")}
-                  className="cursor-pointer border-border hover:border-rose-400 hover:bg-rose-500/[0.02] transition-all p-3.5 flex items-center justify-between gap-3"
+                  className="cursor-pointer rounded-xl border border-border/80 bg-card hover:border-rose-500/50 hover:bg-rose-500/[0.03] transition-all px-4 py-3 flex items-center justify-between gap-3.5 shadow-2xs group"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
                       <AlertTriangle className="w-5 h-5" />
                     </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-foreground">¿Revisar alertas de reposición?</h4>
-                      <p className="text-xs text-muted-foreground">6 ingredientes están por debajo del mínimo.</p>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-semibold text-foreground leading-tight">¿Revisar alertas de reposición?</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">6 ingredientes están por debajo del mínimo.</p>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                </Card>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 transition-transform group-hover:translate-x-0.5" />
+                </div>
 
-                <Card 
+                <div 
                   onClick={() => navigate(RoutePaths.MixziStock)}
-                  className="cursor-pointer border-border hover:border-primary/40 hover:bg-muted/40 transition-all p-3.5 flex items-center justify-between gap-3"
+                  className="cursor-pointer rounded-xl border border-border/80 bg-card hover:border-primary/50 hover:bg-primary/[0.03] transition-all px-4 py-3 flex items-center justify-between gap-3.5 shadow-2xs group"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
                       <Boxes className="w-5 h-5" />
                     </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-foreground">¿Hacer recuento o auditoría?</h4>
-                      <p className="text-xs text-muted-foreground">Comprueba las existencias físicas del almacén.</p>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-semibold text-foreground leading-tight">¿Hacer recuento o auditoría?</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">Comprueba las existencias físicas del almacén.</p>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                </Card>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 transition-transform group-hover:translate-x-0.5" />
+                </div>
               </div>
             </div>
 
