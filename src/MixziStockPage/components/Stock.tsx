@@ -473,28 +473,45 @@ export const Stock = observer(() => {
 
     return (
         <section className="space-y-5 animate-in fade-in duration-300">
-            {/* CABECERA OPERACIONAL INTEGRADA CON BÚSQUEDA Y MÉTRICAS */}
-            <div className="bg-gradient-to-r from-card via-card to-muted/20 border border-border/80 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <span className="p-1.5 rounded-xl bg-primary/10 text-primary">
-                                <Boxes className="size-5" />
+            {/* CABECERA OPERACIONAL CON COMPOSICIÓN VISUAL TOP 2026 */}
+            <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br from-card via-card/95 to-muted/30 p-4 sm:p-6 shadow-xs space-y-5 transition-all">
+                {/* Glow decorativo suave de fondo */}
+                <div className="pointer-events-none absolute -top-12 -right-12 size-48 rounded-full bg-primary/5 blur-3xl" />
+
+                {/* FILA DE ENCABEZADO: JERARQUÍA COMPLETA Y ACCIÓN */}
+                <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="space-y-2">
+                        {/* Eyebrow de metadatos con badge y estado de sincronización */}
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] sm:text-xs">
+                            <span className="inline-flex items-center gap-1.5 font-semibold text-foreground/90 bg-muted/80 px-2.5 py-0.5 rounded-full border border-border/70 shadow-2xs">
+                                <span className="size-1.5 rounded-full bg-primary animate-pulse" />
+                                Almacén & Existencias
                             </span>
-                            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-                                Gestión de Stock & Inventario
-                            </h1>
-                            <span className="text-xs text-muted-foreground flex items-center gap-1 font-normal">
-                                <Clock className="w-3.5 h-3.5" /> Actualizado hace 2 minutos
+                            <span className="text-muted-foreground/30">•</span>
+                            <span className="inline-flex items-center gap-1.5 text-muted-foreground font-normal">
+                                <Clock className="size-3.5 text-muted-foreground/70" />
+                                <span>Actualizado hace 2 minutos</span>
                             </span>
                         </div>
-                        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                            Consulta niveles de inventario, márgenes de seguridad y registra movimientos de almacén.
-                        </p>
+
+                        {/* Título e Icono estructurados */}
+                        <div className="flex items-start sm:items-center gap-3 sm:gap-3.5">
+                            <div className="flex size-10 sm:size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-2xs">
+                                <Boxes className="size-5 sm:size-6" />
+                            </div>
+                            <div className="space-y-0.5">
+                                <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-foreground leading-tight">
+                                    Gestión de Stock & Inventario
+                                </h1>
+                                <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
+                                    Supervisión de existencias en tiempo real, umbrales de seguridad y registro de movimientos operacionales.
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
                     {/* BOTÓN REGISTRAR / NUEVO ARTÍCULO */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 self-start md:self-center shrink-0">
                         <Button
                             onClick={() => {
                                 const isMobile = window.innerWidth < 768;
@@ -508,7 +525,7 @@ export const Stock = observer(() => {
                                     }, 200);
                                 }
                             }}
-                            className="text-xs sm:text-sm font-semibold h-9 gap-1.5 shadow-xs"
+                            className="text-xs sm:text-sm font-semibold h-9.5 px-4 gap-2 shadow-xs bg-primary text-primary-foreground hover:bg-primary/90 active:scale-98 transition-all rounded-xl"
                         >
                             <Plus className="size-4" />
                             <span>Registrar Movimiento</span>
