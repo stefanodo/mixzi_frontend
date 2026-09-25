@@ -1,5 +1,6 @@
 import { useMainStore } from "@/context/MainContext";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams, useLocation } from "react-router-dom";
 import { Info, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group"
@@ -139,6 +140,35 @@ export const Stock = observer(() => {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [activeOptionIndex, setActiveOptionIndex] = useState(-1);
     const [isMovementFormOpen, setIsMovementFormOpen] = useState(false);
+    const [searchParams] = useSearchParams();
+    const location = useLocation();
+
+    // Auto-navegación y apertura de formulario para Agregar Artículo desde el Dashboard
+    useEffect(() => {
+        const isAddAction = searchParams.get("action") === "add-item" || (location.state as any)?.action === "add-item";
+        const requestedBlock = searchParams.get("block") || (location.state as any)?.block;
+
+        if (isAddAction || requestedBlock === "Frescos") {
+            setActiveBlock("Frescos");
+            
+            // Si está en móvil (< 768px), abre el modal
+            const isMobile = window.innerWidth < 768;
+            if (isMobile) {
+                setIsMovementFormOpen(true);
+            }
+
+            // Enfocar el input de artículo una vez montado
+            const timer = setTimeout(() => {
+                const articleInput = document.getElementById("stock-movement-article") as HTMLInputElement | null;
+                if (articleInput) {
+                    articleInput.focus();
+                    articleInput.click();
+                }
+            }, 300);
+
+            return () => clearTimeout(timer);
+        }
+    }, [searchParams, location.state]);
     const searchContainerRef = useRef<HTMLDivElement>(null);
     const movementDialogRef = useRef<HTMLDivElement>(null);
     const movementCloseRef = useRef<HTMLButtonElement>(null);
