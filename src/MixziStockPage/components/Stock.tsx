@@ -289,9 +289,9 @@ export const Stock = observer(() => {
             accessorKey: "tenantId",
             header: "Almacén",
             enableSorting: true,
-            meta: { className: "w-[24%] md:w-auto font-medium text-muted-foreground", headerLabel: "Almacén" },
+            meta: { className: "w-[120px] min-w-[110px] font-medium text-muted-foreground", headerLabel: "Almacén" },
             cell: ({ row }) => (
-              <span className="font-mono text-xs px-2 py-0.5 rounded bg-muted/60 border border-border/40">
+              <span className="font-mono text-xs px-2 py-0.5 rounded bg-muted/60 border border-border/40 whitespace-nowrap">
                 {row.original.tenantId || "Principal"}
               </span>
             ),
@@ -300,13 +300,13 @@ export const Stock = observer(() => {
             accessorKey: "name",
             header: "Artículo / Insumo",
             enableSorting: true,
-            meta: { className: "font-semibold text-foreground", headerLabel: "Artículo" },
+            meta: { className: "min-w-[180px] font-semibold text-foreground", headerLabel: "Artículo" },
             cell: ({ row }) => (
-              <div className="py-0.5">
-                <span className="font-semibold text-foreground text-sm block leading-tight">
+              <div className="py-0.5 min-w-0">
+                <span className="font-semibold text-foreground text-sm block leading-tight truncate">
                   {row.original.name}
                 </span>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-[11px] text-muted-foreground truncate block">
                   {getCategoryName(row.original.category)}
                 </span>
               </div>
@@ -316,9 +316,10 @@ export const Stock = observer(() => {
             id: "minStock",
             header: "Mínimo",
             enableSorting: true,
+            meta: { className: "min-w-[90px]", headerLabel: "Mínimo" },
             accessorFn: (row) => Number((row.minStock as Record<string, unknown> | null | undefined)?.value ?? 0),
             cell: ({ row }) => (
-              <span className="font-mono text-xs">
+              <span className="font-mono text-xs whitespace-nowrap">
                 {`${getNumericValue(row.original.minStock)} ${getUnitValue(row.original.minStock)}`.trim()}
               </span>
             ),
@@ -327,9 +328,10 @@ export const Stock = observer(() => {
             id: "maxStock",
             header: "Máximo",
             enableSorting: true,
+            meta: { className: "min-w-[90px]", headerLabel: "Máximo" },
             accessorFn: (row) => Number((row.maxStock as Record<string, unknown> | null | undefined)?.value ?? 0),
             cell: ({ row }) => (
-              <span className="font-mono text-xs text-muted-foreground">
+              <span className="font-mono text-xs text-muted-foreground whitespace-nowrap">
                 {`${getNumericValue(row.original.maxStock)} ${getUnitValue(row.original.maxStock)}`.trim()}
               </span>
             ),
@@ -338,10 +340,22 @@ export const Stock = observer(() => {
             id: "wasteDefaultPct",
             header: "Merma",
             enableSorting: true,
+            meta: { className: "min-w-[80px]", headerLabel: "Merma" },
             accessorFn: (row) => Number((row.wasteDefaultPct as Record<string, unknown> | null | undefined)?.value ?? 0),
             cell: ({ row }) => (
-              <span className="font-mono text-xs text-muted-foreground">
+              <span className="font-mono text-xs text-muted-foreground whitespace-nowrap">
                 {getNumericValue(row.original.wasteDefaultPct)}%
+              </span>
+            ),
+        },
+        {
+            accessorKey: "updatedAt",
+            header: "Actualizado",
+            enableSorting: true,
+            meta: { className: "min-w-[110px]", headerLabel: "Actualizado" },
+            cell: ({ row }) => (
+              <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
+                {new Date(row.original.updatedAt).toLocaleDateString()}
               </span>
             ),
         },
@@ -349,26 +363,28 @@ export const Stock = observer(() => {
             accessorKey: "isActive",
             header: "Estado",
             enableSorting: true,
+            meta: {
+                headerLabel: "Estado",
+                className: "sticky right-0 z-10 bg-background/95 dark:bg-card/95 backdrop-blur-md min-w-[150px] border-l border-border/80 shadow-[-8px_0_16px_-6px_rgba(0,0,0,0.12)] dark:shadow-[-8px_0_16px_-6px_rgba(0,0,0,0.5)] pl-4 pr-3",
+                headerClassName: "sticky right-0 z-20 bg-background/95 dark:bg-card/95 backdrop-blur-md min-w-[150px] border-l border-border/80 shadow-[-8px_0_16px_-6px_rgba(0,0,0,0.12)] dark:shadow-[-8px_0_16px_-6px_rgba(0,0,0,0.5)] pl-4 pr-3 font-bold text-foreground tracking-wide uppercase text-[11px]",
+            },
             cell: ({ row }) => row.original.isActive ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                    <CheckCircle2 className="size-3" />
-                    Óptimo
-                </span>
+                <div className="flex items-center">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-bold text-emerald-600 shadow-xs dark:border-emerald-400/40 dark:bg-emerald-400/15 dark:text-emerald-400 whitespace-nowrap">
+                        <CheckCircle2 className="size-3.5" />
+                        Óptimo
+                    </span>
+                </div>
             ) : (
-                <span className="inline-flex items-center gap-1 rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-[11px] font-bold text-rose-600 dark:text-rose-400">
-                    <span className="size-1.5 rounded-full bg-rose-500 animate-pulse" />
-                    Bajo Mínimo
-                </span>
-            ),
-        },
-        {
-            accessorKey: "updatedAt",
-            header: "Actualizado",
-            enableSorting: true,
-            cell: ({ row }) => (
-              <span className="text-xs text-muted-foreground font-mono">
-                {new Date(row.original.updatedAt).toLocaleDateString()}
-              </span>
+                <div className="flex items-center">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/40 bg-rose-500/15 px-2.5 py-1 text-[11px] font-bold text-rose-600 shadow-xs ring-1 ring-rose-500/25 dark:border-rose-400/40 dark:bg-rose-400/15 dark:text-rose-400 dark:ring-rose-400/25 whitespace-nowrap">
+                        <span className="relative flex size-2">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75"></span>
+                            <span className="relative inline-flex size-2 rounded-full bg-rose-600 dark:bg-rose-500"></span>
+                        </span>
+                        Bajo Mínimo
+                    </span>
+                </div>
             ),
         },
     ], []);
