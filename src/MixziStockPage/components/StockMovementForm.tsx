@@ -237,10 +237,10 @@ export function StockMovementForm({ showTitle = true }: StockMovementFormProps) 
                                 <fieldset className="grid min-w-0 gap-4">
                                     <legend className="sr-only">Ubicación del movimiento</legend>
                                     <Field className="min-w-0">
-                                        <FieldLabel htmlFor="stock-movement-location">Artículo *</FieldLabel>
+                                        <FieldLabel htmlFor="stock-movement-article">Artículo *</FieldLabel>
                                         <StockArticleAutocomplete
-                                            id="stock-movement-location"
-                                            name="location"
+                                            id="stock-movement-article"
+                                            name="article"
                                             placeholder="Escribe (ej. patata, sal...)"
                                             options={MOCKED_ARTICLE_NAMES}
                                         />
