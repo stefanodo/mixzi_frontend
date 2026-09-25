@@ -49,6 +49,7 @@ export type DataGridColumn<TData extends object> = ColumnDef<
 
 type DataGridColumnMeta = {
   className?: string;
+  headerClassName?: string;
   headerLabel?: string;
 };
 
@@ -186,6 +187,10 @@ export function DataGrid<TData extends object>({
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
+                    className={cn(
+                      (header.column.columnDef.meta as DataGridColumnMeta | undefined)?.className,
+                      (header.column.columnDef.meta as DataGridColumnMeta | undefined)?.headerClassName,
+                    )}
                     aria-sort={header.column.getCanSort()
                       ? header.column.getIsSorted() === "asc"
                         ? "ascending"
