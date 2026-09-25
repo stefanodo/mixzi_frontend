@@ -417,28 +417,58 @@ export const Stock = observer(() => {
     }, [filteredCatalogItems]);
 
     const searchOptions = useMemo(() => {
-        const options = new Map<string, { label: string; value: string; categoryId?: string }>();
-        catalogReferences.forEach((item) => {
-            const optionValue = item.name;
-            const categoryId = typeof item.category === "object" && item.category
-                ? String((item.category as Record<string, unknown>).id ?? "")
-                : "";
-            const optionLabel = [item.name, item.unit, getCategoryName(item.category)]
-                .filter(Boolean)
-                .join(" - ");
+        const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+        // Si el usuario no ha escrito nada, no se despliega nada (comportamiento tipo AJAX reactivo)
+        if (!normalizedSearchTerm) {
+            return [];
+        }
 
-            if (optionValue && optionLabel) {
-                options.set(`${item.id}-${item.name}-${item.unit}`, {
-                    label: optionLabel,
-                    value: optionValue,
-                    categoryId,
-                });
+        const options = new Map<string, { label: string; value: string; categoryId?: string; priority: number }>();
+        catalogReferences.forEach((item) => {
+            const itemNameLower = (item.name || "").toLowerCase();
+            const categoryName = getCategoryName(item.category).toLowerCase();
+            const unitName = (item.unit || "").toLowerCase();
+
+            let priority = -1;
+            // 1. Prioridad máxima: el nombre empieza exactamente por el término ("t", "to"...)
+            if (itemNameLower.startsWith(normalizedSearchTerm)) {
+                priority = 1;
+            } else if (itemNameLower.split(/\s+/).some((word) => word.startsWith(normalizedSearchTerm))) {
+                // 2. Una palabra del nombre empieza por el término
+                priority = 2;
+            } else if (itemNameLower.includes(normalizedSearchTerm)) {
+                // 3. Contiene la subcadena en el nombre
+                priority = 3;
+            } else if (categoryName.includes(normalizedSearchTerm) || unitName.includes(normalizedSearchTerm)) {
+                // 4. Coincidencia en categoría o unidad
+                priority = 4;
+            }
+
+            if (priority !== -1) {
+                const optionValue = item.name;
+                const categoryId = typeof item.category === "object" && item.category
+                    ? String((item.category as Record<string, unknown>).id ?? "")
+                    : "";
+                const optionLabel = [item.name, item.unit, getCategoryName(item.category)]
+                    .filter(Boolean)
+                    .join(" - ");
+
+                if (optionValue && optionLabel) {
+                    options.set(`${item.id}-${item.name}`, {
+                        label: optionLabel,
+                        value: optionValue,
+                        categoryId,
+                        priority,
+                    });
+                }
             }
         });
 
-        const normalizedSearchTerm = searchTerm.trim().toLowerCase();
         return Array.from(options.values())
-            .filter((option) => option.label.toLowerCase().includes(normalizedSearchTerm))
+            .sort((a, b) => {
+                if (a.priority !== b.priority) return a.priority - b.priority;
+                return a.label.localeCompare(b.label);
+            })
             .slice(0, 8);
     }, [searchTerm, catalogReferences]);
 
@@ -541,12 +571,17 @@ export const Stock = observer(() => {
                             id="stock-search"
                             type="text"
                             aria-label="Buscar artículo o ingrediente"
-                            placeholder="Buscar ingrediente o producto (ej. Solomillo, Cerveza, Aceite...)"
+                            placeholder="Buscar por letra o producto (ej. 't', 'to', 'Tomate')..."
                             value={searchTerm}
-                            onFocus={() => setIsSearchOpen(true)}
+                            onFocus={() => {
+                                if (searchTerm.trim().length > 0) {
+                                    setIsSearchOpen(true);
+                                }
+                            }}
                             onChange={(event) => {
-                                setSearchTerm(event.target.value);
-                                setIsSearchOpen(true);
+                                const val = event.target.value;
+                                setSearchTerm(val);
+                                setIsSearchOpen(val.trim().length > 0);
                                 setActiveOptionIndex(-1);
                             }}
                             onKeyDown={(event) => {
@@ -583,29 +618,35 @@ export const Stock = observer(() => {
                         )}
                     </div>
 
-                    {/* Desplegable de búsqueda */}
-                    {isSearchOpen && searchOptions.length > 0 && (
+                    {/* Desplegable predictivo tipo AJAX (solo visible al escribir) */}
+                    {isSearchOpen && searchTerm.trim().length > 0 && (
                         <div
                             id="stock-search-options"
                             role="listbox"
                             className="absolute z-30 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-border/80 bg-popover/95 backdrop-blur-md p-1 shadow-lg animate-in fade-in slide-in-from-top-1 duration-200"
                         >
-                            {searchOptions.map((option, index) => (
-                                <button
-                                    key={option.label}
-                                    type="button"
-                                    role="option"
-                                    aria-selected={activeOptionIndex === index}
-                                    className={`flex items-center justify-between w-full rounded-lg px-3 py-2 text-left text-xs sm:text-sm text-foreground transition-colors hover:bg-muted ${
-                                        activeOptionIndex === index ? "bg-muted font-medium" : ""
-                                    }`}
-                                    onMouseDown={(event) => event.preventDefault()}
-                                    onClick={() => selectSearchOption(option)}
-                                >
-                                    <span className="truncate">{option.label}</span>
-                                    <ChevronRight className="size-3.5 text-muted-foreground shrink-0 ml-2" />
-                                </button>
-                            ))}
+                            {searchOptions.length > 0 ? (
+                                searchOptions.map((option, index) => (
+                                    <button
+                                        key={option.label}
+                                        type="button"
+                                        role="option"
+                                        aria-selected={activeOptionIndex === index}
+                                        className={`flex items-center justify-between w-full rounded-lg px-3 py-2 text-left text-xs sm:text-sm text-foreground transition-colors hover:bg-muted ${
+                                            activeOptionIndex === index ? "bg-muted font-medium" : ""
+                                        }`}
+                                        onMouseDown={(event) => event.preventDefault()}
+                                        onClick={() => selectSearchOption(option)}
+                                    >
+                                        <span className="truncate">{option.label}</span>
+                                        <ChevronRight className="size-3.5 text-muted-foreground shrink-0 ml-2" />
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="px-3 py-2.5 text-xs text-muted-foreground text-center">
+                                    No se encontraron artículos que coincidan con "{searchTerm}"
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
