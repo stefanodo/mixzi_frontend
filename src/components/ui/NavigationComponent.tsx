@@ -1,4 +1,4 @@
-import { Gauge, Heart, Moon, Package, Plus, Sun, User, LogIn } from "lucide-react"
+import { Gauge, Heart, Moon, Package, Sun, User, LogIn } from "lucide-react"
 import { type KeyboardEvent, type PointerEvent, useEffect, useRef, useState } from "react"
 import { matchPath, NavLink, useLocation, useNavigate } from "react-router-dom"
 import { RoutePaths } from "../../router/routes"
@@ -25,13 +25,13 @@ export const NavigationComponent = () => {
     const [hasDragged, setHasDragged] = useState(false)
     const dragThreshold = 5
     const isInteractingRef = useRef(false)
-    const activeIndex = location.pathname.startsWith(RoutePaths.MixziStock)
-        ? 1
-        : location.pathname.startsWith(RoutePaths.MixziProfile)
-        ? 2
-        : location.pathname.startsWith(RoutePaths.MixziLogin)
-        ? 3
-        : 0
+
+    const isStockActive = location.pathname.startsWith(RoutePaths.MixziStock)
+    const isDashboardActive = location.pathname.startsWith(RoutePaths.MixziDashboard) || (!isStockActive && !location.pathname.startsWith(RoutePaths.MixziProfile) && !location.pathname.startsWith(RoutePaths.MixziLogin))
+    const isProfileActive = location.pathname.startsWith(RoutePaths.MixziProfile)
+    const isLoginActive = location.pathname.startsWith(RoutePaths.MixziLogin)
+
+    const mainActiveIndex = isStockActive ? 1 : 0
 
     const resetDrag = () => {
         setDragOffset({ x: 0, y: 0 })
@@ -100,7 +100,7 @@ export const NavigationComponent = () => {
     const getLinkClasses = (path: string) => {
         const isActive = matchPath({ path, end: false }, location.pathname)
         return cn(
-            "relative z-10 flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold tracking-wide transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+            "relative z-10 flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
             isActive
                 ? "text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -110,7 +110,7 @@ export const NavigationComponent = () => {
     const getMobileLinkClasses = (path: string) => {
         const isActive = matchPath({ path, end: false }, location.pathname)
         return cn(
-            "flex flex-1 items-center justify-center gap-1.5 rounded-full py-1.5 text-xs font-semibold tracking-wide transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+            "flex flex-1 items-center justify-center gap-1.5 rounded-full py-2 text-xs font-semibold tracking-wide transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
             isActive
                 ? "bg-primary text-primary-foreground shadow-sm shadow-primary/25"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
@@ -122,6 +122,7 @@ export const NavigationComponent = () => {
     return (
         <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/80 backdrop-blur-xl">
             <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:px-6">
+                {/* Brand / Logo */}
                 <div className="relative flex items-center select-none overflow-hidden h-9 w-[124px] cursor-grab active:cursor-grabbing">
                     <div
                         className="absolute inset-0 flex flex-col items-center justify-center bg-transparent pointer-events-none text-center px-1"
@@ -157,15 +158,16 @@ export const NavigationComponent = () => {
                     </div>
                 </div>
 
+                {/* Central Primary Operational Navigation (Desktop) */}
                 <nav
                     className="relative hidden md:flex items-center gap-1 rounded-full border border-border/70 bg-card/90 p-1 shadow-sm backdrop-blur-md"
-                    aria-label="Navegación principal"
+                    aria-label="Navegación operativa"
                 >
                     <span
                         className="pointer-events-none absolute inset-y-1 rounded-full bg-primary shadow-sm shadow-primary/30 transition-all duration-300 ease-out"
                         style={{
-                            width: "calc(33.333% - 5px)",
-                            transform: `translateX(calc(${activeIndex * 100}% + ${activeIndex * 4}px))`,
+                            width: "calc(50% - 4px)",
+                            transform: `translateX(calc(${mainActiveIndex * 100}% + ${mainActiveIndex * 4}px))`,
                         }}
                         aria-hidden="true"
                     />
@@ -187,28 +189,11 @@ export const NavigationComponent = () => {
                         <Package className="h-3.5 w-3.5" />
                         <span>Stock</span>
                     </NavLink>
-
-                    <NavLink
-                        to={RoutePaths.MixziProfile}
-                        className={getLinkClasses(RoutePaths.MixziProfile)}
-                        title="Perfil y Tenant (⌘3)"
-                    >
-                        <User className="h-3.5 w-3.5" />
-                        <span>Perfil</span>
-                    </NavLink>
-
-                    <NavLink
-                        to={RoutePaths.MixziLogin}
-                        className={getLinkClasses(RoutePaths.MixziLogin)}
-                        title="Acceso / Login (⌘4)"
-                    >
-                        <LogIn className="h-3.5 w-3.5" />
-                        <span>Acceso</span>
-                    </NavLink>
                 </nav>
 
+                {/* Right side: Live badge, Theme toggle, Login button, Profile Avatar */}
                 <div className="flex items-center gap-2">
-                    <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    <span className="hidden lg:inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         En vivo
                     </span>
@@ -218,14 +203,49 @@ export const NavigationComponent = () => {
                         onClick={toggleTheme}
                         aria-label={isThemeDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
                         className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/80 bg-card text-foreground transition-all hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        title={isThemeDark ? "Modo Claro" : "Modo Oscuro"}
                     >
                         {isThemeDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                     </button>
+
+                    <div className="h-4 w-px bg-border/60 mx-0.5 hidden sm:block" />
+
+                    {/* Login / Acceso button */}
+                    <NavLink
+                        to={RoutePaths.MixziLogin}
+                        className={cn(
+                            "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                            isLoginActive
+                                ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                                : "border border-border/80 bg-card text-foreground hover:bg-muted hover:border-primary/40"
+                        )}
+                        title="Acceso / Iniciar sesión (⌘4)"
+                    >
+                        <LogIn className="h-3.5 w-3.5 text-primary" />
+                        <span className="hidden sm:inline">Entrar</span>
+                    </NavLink>
+
+                    {/* User Profile Avatar button */}
+                    <NavLink
+                        to={RoutePaths.MixziProfile}
+                        className={cn(
+                            "relative inline-flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                            isProfileActive
+                                ? "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 ring-offset-background"
+                                : "border border-border/80 bg-muted/60 text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/50"
+                        )}
+                        title="Mi Perfil & Permisos Tenant (⌘3)"
+                        aria-label="Perfil de usuario"
+                    >
+                        <User className="h-4 w-4" />
+                        <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-background" />
+                    </NavLink>
                 </div>
             </div>
 
-            <div className="flex md:hidden border-t border-border/60 bg-card/95 px-3 py-1.5 backdrop-blur-md">
-                <nav className="flex w-full items-center gap-1.5" aria-label="Navegación móvil">
+            {/* Mobile Bottom Navigation Bar (4 tabs: Dashboard, Stock, Perfil, Acceso) */}
+            <div className="flex md:hidden border-t border-border/60 bg-card/95 px-2 py-1.5 backdrop-blur-md">
+                <nav className="flex w-full items-center gap-1" aria-label="Navegación móvil">
                     <NavLink
                         to={RoutePaths.MixziDashboard}
                         className={getMobileLinkClasses(RoutePaths.MixziDashboard)}
@@ -255,7 +275,7 @@ export const NavigationComponent = () => {
                         className={getMobileLinkClasses(RoutePaths.MixziLogin)}
                     >
                         <LogIn className="h-3.5 w-3.5" />
-                        <span>Acceso</span>
+                        <span>Entrar</span>
                     </NavLink>
                 </nav>
             </div>
