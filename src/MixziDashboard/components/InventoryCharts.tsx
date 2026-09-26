@@ -604,15 +604,15 @@ export const InventoryCharts: React.FC<InventoryChartsProps> = ({
               Distribución del inmovilizado en almacenes y cámaras.
             </CardDescription>
           </div>
-          <span className="text-xs font-bold text-foreground font-mono bg-muted/60 px-2 py-0.5 rounded-md border border-border/40">
+          <span className="text-xs font-bold text-foreground font-mono bg-muted/60 px-2.5 py-1 rounded-md border border-border/40">
             Total {currentData.totalVal}
           </span>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-4 pt-1">
-        <div className="flex flex-col sm:flex-row items-center gap-6">
-          {/* Donut SVG con animación de trazado */}
+        <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-6">
+          {/* Donut SVG interactivo con animación y puntero exacto al trazo */}
           <div className="relative size-36 shrink-0 flex items-center justify-center">
             <svg 
               className={`size-full transform -rotate-90 transition-transform duration-700 ease-out ${isLoading ? "scale-90 opacity-40 rotate-0" : "scale-100 opacity-100"}`} 
@@ -622,10 +622,10 @@ export const InventoryCharts: React.FC<InventoryChartsProps> = ({
                 cx="18"
                 cy="18"
                 r="15.9155"
-                fill="transparent"
+                fill="none"
                 stroke="currentColor"
                 strokeWidth="3.5"
-                className="text-muted/30"
+                className="text-muted/20"
               />
               {categories.map((c, i) => {
                 const isSelected = selectedCategory === c.name;
@@ -635,12 +635,13 @@ export const InventoryCharts: React.FC<InventoryChartsProps> = ({
                     cx="18"
                     cy="18"
                     r="15.9155"
-                    fill="transparent"
+                    fill="none"
                     stroke={c.stroke}
-                    strokeWidth={isSelected ? "5" : "3.5"}
+                    strokeWidth={isSelected ? "5.5" : "3.5"}
                     strokeDasharray={isLoading ? "0 100" : c.dash}
                     strokeDashoffset={c.offset}
-                    className="cursor-pointer transition-all duration-700 ease-in-out hover:opacity-80"
+                    style={{ pointerEvents: "stroke" }}
+                    className="cursor-pointer transition-all duration-500 ease-in-out hover:opacity-85 focus:outline-hidden"
                     onClick={() => {
                       const next = selectedCategory === c.name ? null : c.name;
                       setSelectedCategory(next);
@@ -650,50 +651,71 @@ export const InventoryCharts: React.FC<InventoryChartsProps> = ({
                 );
               })}
             </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-              <span className="text-[10px] md:text-[8px] text-muted-foreground uppercase font-bold tracking-wider">
+            <button
+              type="button"
+              onClick={() => {
+                if (selectedCategory) {
+                  setSelectedCategory(null);
+                }
+              }}
+              title={selectedCategory ? "Haz clic para restablecer filtro" : "Distribución total"}
+              className={`absolute inset-0 m-auto size-24 rounded-full flex flex-col items-center justify-center text-center transition-all focus:outline-hidden ${
+                selectedCategory ? "cursor-pointer hover:bg-muted/50 group" : "cursor-default"
+              }`}
+            >
+              <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
                 {selectedCategory ? "Filtrado" : "Inmovilizado"}
               </span>
-              <span className="text-sm md:text-[11px] font-extrabold tracking-tight font-mono text-foreground transition-all">
+              <span className="text-sm font-extrabold tracking-tight font-mono text-foreground transition-all">
                 {selectedCategory 
                   ? categories.find(c => c.name === selectedCategory)?.amount 
                   : currentData.totalVal}
               </span>
-              <span className="text-[9px] md:text-[7.5px] text-muted-foreground">
-                {selectedCategory || `${categories.length} Familias`}
+              <span className={`text-[10px] transition-colors ${
+                selectedCategory ? "text-primary font-medium group-hover:underline" : "text-muted-foreground"
+              }`}>
+                {selectedCategory ? "Limpiar filtro" : `${categories.length} Familias`}
               </span>
-            </div>
+            </button>
           </div>
 
-          {/* Leyenda interactiva de categorías */}
-          <div className="w-full space-y-1.5 md:space-y-1 flex-1 min-w-0">
+          {/* Leyenda interactiva de categorías reorganizada para desktop y móvil */}
+          <div className="w-full space-y-1.5 flex-1 min-w-0">
             {categories.map((cat, i) => {
               const isSelected = selectedCategory === cat.name;
               return (
                 <button
                   key={i}
+                  type="button"
                   onClick={() => {
                     const next = isSelected ? null : cat.name;
                     setSelectedCategory(next);
                     if (next && onSelectCategory) onSelectCategory(next);
                   }}
-                  className={`w-full flex items-center justify-between text-xs md:text-[9px] p-1.5 md:p-1 md:px-2 rounded-lg transition-all duration-200 text-left ${
+                  className={`w-full p-2 rounded-xl transition-all duration-200 text-left border ${
                     isSelected 
-                      ? "bg-primary/10 border border-primary/30 font-semibold shadow-xs scale-[1.01]" 
-                      : "hover:bg-muted/50 border border-transparent"
+                      ? "bg-primary/10 border-primary/40 shadow-xs ring-1 ring-primary/20" 
+                      : "hover:bg-muted/50 border-border/50 bg-card/60"
                   }`}
                 >
-                  <div className="flex items-center gap-2 md:gap-1.5 truncate min-w-0">
-                    <span 
-                      className="size-2.5 md:size-2 rounded-full shrink-0 transition-transform group-hover:scale-125" 
-                      style={{ backgroundColor: cat.stroke }} 
-                    />
-                    <span className="truncate">{cat.name}</span>
-                    <span className="text-[10px] md:text-[8px] text-muted-foreground shrink-0">({cat.items})</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span 
+                        className="size-2.5 rounded-full shrink-0" 
+                        style={{ backgroundColor: cat.stroke }} 
+                      />
+                      <span className="text-xs font-semibold text-foreground whitespace-normal leading-tight">
+                        {cat.name}
+                      </span>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-foreground shrink-0 ml-1">
+                      {cat.amount}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2 md:gap-1.5 shrink-0 ml-1">
-                    <span className="font-mono font-medium text-xs md:text-[9px]">{cat.amount}</span>
-                    <span className="text-[10px] md:text-[8px] font-bold text-muted-foreground w-8 md:w-6 text-right font-mono">
+
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1 pl-4.5">
+                    <span>{cat.items} artículos</span>
+                    <span className="font-mono font-semibold" style={{ color: isSelected ? cat.stroke : undefined }}>
                       {cat.value}
                     </span>
                   </div>
