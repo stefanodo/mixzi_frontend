@@ -1,4 +1,4 @@
-import { LoginPage } from "@/MixziAuth/LoginPage";
+import { LoginPage } from "../MixziAuth/LoginPage";
 
 export const MixziLoginPage = () => {
   return <LoginPage />;
