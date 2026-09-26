@@ -179,6 +179,24 @@ export default class AuthStore {
     this.emailNotFoundError = false;
   };
 
+  // Hooks invocados por ApiService en cada request. Manejo minimo de estado
+  // de carga global + logout automatico ante 401. Ajustar si el flujo de
+  // auth necesita otra logica (p.ej. refresh token) en vez de logout directo.
+  onStartedRequest = async () => {
+    this.setIsLoading(true);
+  };
+
+  onSuccessfulRequest = () => {
+    this.setIsLoading(false);
+  };
+
+  onUnsuccessfulRequest = (stats: RequestStatistics) => {
+    this.setIsLoading(false);
+    if (stats.responseCode === 401) {
+      this.logout();
+    }
+  };
+
   private restoreSession() {
     try {
       const stored = localStorage.getItem("mixzi_auth_session");
