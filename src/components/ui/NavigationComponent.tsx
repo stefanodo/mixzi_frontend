@@ -1,4 +1,4 @@
-import { Gauge, Heart, Moon, Package, Plus, Sun } from "lucide-react"
+import { Gauge, Heart, Moon, Package, Plus, Sun, User } from "lucide-react"
 import { type KeyboardEvent, type PointerEvent, useEffect, useRef, useState } from "react"
 import { matchPath, NavLink, useLocation, useNavigate } from "react-router-dom"
 import { RoutePaths } from "../../router/routes"
@@ -23,63 +23,68 @@ export const NavigationComponent = () => {
     const [isDragging, setIsDragging] = useState(false)
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
     const [hasDragged, setHasDragged] = useState(false)
-    const logoLinkRef = useRef<HTMLAnchorElement>(null)
+    const dragThreshold = 5
+    const isInteractingRef = useRef(false)
+    const activeIndex = location.pathname.startsWith(RoutePaths.MixziStock)
+        ? 1
+        : location.pathname.startsWith(RoutePaths.MixziProfile)
+        ? 2
+        : 0
 
-    const isDashboardActive = Boolean(matchPath({ path: RoutePaths.MixziDashboard, end: true }, location.pathname))
-    const isStockActive = Boolean(matchPath({ path: RoutePaths.MixziStock, end: true }, location.pathname))
+    const resetDrag = () => {
+        setDragOffset({ x: 0, y: 0 })
+        setIsDragging(false)
+        setHasDragged(false)
+        isInteractingRef.current = false
+    }
 
-    // Refs para la animación fluida del indicador de pestaña en desktop
-    const desktopNavRef = useRef<HTMLDivElement>(null)
-    const dashboardTabRef = useRef<HTMLAnchorElement>(null)
-    const stockTabRef = useRef<HTMLAnchorElement>(null)
-    const [pillStyle, setPillStyle] = useState<{ left: number; width: number; opacity: number }>({
-        left: 4,
-        width: 110,
-        opacity: 0,
-    })
+    const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+        if (event.button !== 0) return
+        isInteractingRef.current = true
+        setIsDragging(true)
+        setHasDragged(false)
+        setDragStart({
+            x: event.clientX - dragOffset.x,
+            y: event.clientY - dragOffset.y,
+        })
+        event.currentTarget.setPointerCapture?.(event.pointerId)
+    }
 
-    // Actualizar la posición de la píldora animada en desktop
-    useEffect(() => {
-        const updatePill = () => {
-            const container = desktopNavRef.current
-            const activeEl = isDashboardActive
-                ? dashboardTabRef.current
-                : isStockActive
-                ? stockTabRef.current
-                : null
-
-            if (container && activeEl) {
-                const containerRect = container.getBoundingClientRect()
-                const activeRect = activeEl.getBoundingClientRect()
-                setPillStyle({
-                    left: activeRect.left - containerRect.left,
-                    width: activeRect.width,
-                    opacity: 1,
-                })
-            } else {
-                setPillStyle((prev) => ({ ...prev, opacity: 0 }))
-            }
+    const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+        if (!isInteractingRef.current) return
+        const nextX = event.clientX - dragStart.x
+        const nextY = event.clientY - dragStart.y
+        if (!hasDragged && Math.hypot(nextX, nextY) > dragThreshold) {
+            setHasDragged(true)
         }
+        setDragOffset({
+            x: Math.max(-56, Math.min(56, nextX)),
+            y: Math.max(-56, Math.min(56, nextY)),
+        })
+    }
 
-        updatePill()
-        window.addEventListener("resize", updatePill)
-        return () => window.removeEventListener("resize", updatePill)
-    }, [isDashboardActive, isStockActive])
+    const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
+        if (!isInteractingRef.current) return
+        try {
+            event.currentTarget.releasePointerCapture?.(event.pointerId)
+        } catch {}
+        resetDrag()
+    }
 
-    // Atajos de teclado (⌘1 / Ctrl+1 para Dashboard, ⌘2 / Ctrl+2 para Stock)
     useEffect(() => {
         const handleKeyDown = (event: globalThis.KeyboardEvent) => {
-            const target = event.target as HTMLElement
-            if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) {
-                return
-            }
+            const isModifierPressed = event.metaKey || event.ctrlKey
+            if (!isModifierPressed) return
 
-            if ((event.metaKey || event.ctrlKey) && event.key === "1") {
+            if (event.key === "1") {
                 event.preventDefault()
                 navigate(RoutePaths.MixziDashboard)
-            } else if ((event.metaKey || event.ctrlKey) && event.key === "2") {
+            } else if (event.key === "2") {
                 event.preventDefault()
                 navigate(RoutePaths.MixziStock)
+            } else if (event.key === "3") {
+                event.preventDefault()
+                navigate(RoutePaths.MixziProfile)
             }
         }
 
@@ -87,259 +92,148 @@ export const NavigationComponent = () => {
         return () => window.removeEventListener("keydown", handleKeyDown)
     }, [navigate])
 
-    useEffect(() => {
-        if (!isDragging) return
-
-        const handlePointerUp = () => {
-            setIsDragging(false)
-            setDragOffset({ x: 0, y: 0 })
-        }
-
-        document.addEventListener("pointerup", handlePointerUp)
-        return () => document.removeEventListener("pointerup", handlePointerUp)
-    }, [isDragging])
-
-    const handleThemeToggle = () => {
-        toggleTheme()
+    const getLinkClasses = (path: string) => {
+        const isActive = matchPath({ path, end: false }, location.pathname)
+        return cn(
+            "relative z-10 flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold tracking-wide transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+            isActive
+                ? "text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+        )
     }
 
-    const handleThemeKeyboardActivation = (event: KeyboardEvent<HTMLButtonElement>) => {
-        if (event.key !== "Enter" && event.key !== " ") {
-            return
-        }
-
-        event.preventDefault()
-        handleThemeToggle()
+    const getMobileLinkClasses = (path: string) => {
+        const isActive = matchPath({ path, end: false }, location.pathname)
+        return cn(
+            "flex flex-1 items-center justify-center gap-1.5 rounded-full py-1.5 text-xs font-semibold tracking-wide transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+            isActive
+                ? "bg-primary text-primary-foreground shadow-sm shadow-primary/25"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+        )
     }
 
-    const handleLogoPointerMove = (event: PointerEvent<HTMLAnchorElement>) => {
-        const bounds = event.currentTarget.getBoundingClientRect()
-        const horizontalPosition = ((event.clientX - bounds.left) / bounds.width - 0.5) * 2
-        const verticalPosition = ((event.clientY - bounds.top) / bounds.height - 0.5) * 2
-
-        event.currentTarget.style.setProperty("--logo-bend-y", `${horizontalPosition * 20}deg`)
-        event.currentTarget.style.setProperty("--logo-bend-z", `${horizontalPosition * -6 + verticalPosition * -4}deg`)
-        event.currentTarget.style.setProperty("--logo-bend-skew", `${horizontalPosition * 6}deg`)
-    }
-
-    const handleLogoPointerLeave = (event: PointerEvent<HTMLAnchorElement>) => {
-        event.currentTarget.style.removeProperty("--logo-bend-y")
-        event.currentTarget.style.removeProperty("--logo-bend-z")
-        event.currentTarget.style.removeProperty("--logo-bend-skew")
-    }
-
-    const handleLogoDragStart = (event: PointerEvent<HTMLAnchorElement>) => {
-        setIsDragging(true)
-        setHasDragged(false)
-        setDragStart({ x: event.clientX, y: event.clientY })
-        setDragOffset({ x: 0, y: 0 })
-        try {
-            event.currentTarget.setPointerCapture(event.pointerId)
-        } catch {
-            // fallback
-        }
-    }
-
-    const handleLogoDragMove = (event: PointerEvent<HTMLAnchorElement>) => {
-        if (!isDragging) return
-
-        const deltaX = event.clientX - dragStart.x
-        const deltaY = event.clientY - dragStart.y
-
-        if (Math.hypot(deltaX, deltaY) > 5) {
-            setHasDragged(true)
-        }
-
-        setDragOffset({ x: deltaX, y: deltaY })
-    }
-
-    const handleLogoDragEnd = (event: PointerEvent<HTMLAnchorElement>) => {
-        if (isDragging) {
-            setIsDragging(false)
-            setDragOffset({ x: 0, y: 0 })
-            try {
-                event.currentTarget.releasePointerCapture(event.pointerId)
-            } catch {
-                // fallback
-            }
-        }
-    }
+    const isThemeDark = theme === "dark"
 
     return (
-        <header className="sticky top-0 z-40 w-full border-b border-border/70 bg-background/90 backdrop-blur-xl shadow-2xs transition-colors">
-            {/* BARRA SUPERIOR PRINCIPAL */}
-            <div className="mx-auto flex h-14 sm:h-16 w-full max-w-7xl items-center justify-between px-3.5 sm:px-6">
-                {/* LOGO INTERACTIVO CON EASTER EGG DE HOJA LEVANTABLE */}
-                {/* El easter egg está justo debajo del logo, fijado y exactamente con sus mismas dimensiones */}
-                <div className="relative inline-flex items-center shrink-0">
-                    {/* EASTER EGG FIJO DEBAJO DEL LOGO (mismo tamaño del logo, no sobresale) */}
+        <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/80 backdrop-blur-xl">
+            <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:px-6">
+                <div className="relative flex items-center select-none overflow-hidden h-9 w-[124px] cursor-grab active:cursor-grabbing">
                     <div
+                        className="absolute inset-0 flex flex-col items-center justify-center bg-transparent pointer-events-none text-center px-1"
                         aria-hidden="true"
-                        className="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center rounded-lg border border-red-500/15 bg-red-500/5 p-0.5 text-center select-none overflow-hidden"
                     >
-                        <div className="flex flex-col items-center justify-center scale-[0.70] origin-center">
-                            <Heart className="size-3 text-rose-500 fill-rose-500 animate-pulse" strokeWidth={1} />
-                            <div className="mt-0.5 flex flex-col items-center leading-tight text-foreground/85 font-semibold tracking-tight whitespace-nowrap">
-                                <span className="text-[6.8px] scale-[0.85] origin-center inline-block">Made with Love</span>
-                                <span className="text-[6.5px] text-muted-foreground font-normal">by mixzi team!</span>
-                            </div>
-                        </div>
+                        <Heart className="h-2.5 w-2.5 text-rose-500 fill-rose-500 animate-pulse drop-shadow-sm" />
+                        <span className="text-[7.5px] font-bold text-foreground/85 leading-tight tracking-tight mt-0.5 whitespace-nowrap">
+                            Made with Love by mixzi team!
+                        </span>
                     </div>
 
-                    {/* LOGOTIPO QUE ACTÚA COMO HOJA QUE SE LEVANTA Y REVELA LO QUE HAY DEBAJO */}
-                    <NavLink
-                        ref={logoLinkRef}
-                        className="mixzi-logo-link relative z-10 block shrink-0 select-none bg-background/95 rounded-lg"
-                        to={RoutePaths.MixziDashboard}
-                        onClick={(e) => {
-                            if (hasDragged) {
-                                e.preventDefault()
-                                setHasDragged(false)
-                            }
-                        }}
+                    <div
+                        tabIndex={0}
+                        role="button"
+                        aria-label="Mixzi logo interactivo, arrastra para descubrir mensaje especial"
                         onKeyDown={handleKeyboardActivation}
-                        onPointerLeave={handleLogoPointerLeave}
-                        onPointerDown={handleLogoDragStart}
-                        onPointerMove={(e) => {
-                            handleLogoPointerMove(e)
-                            handleLogoDragMove(e)
-                        }}
-                        onPointerUp={handleLogoDragEnd}
+                        onPointerDown={handlePointerDown}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
+                        onPointerCancel={resetDrag}
+                        className="relative z-10 flex h-full w-full items-center transition-transform duration-100 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg"
                         style={{
-                            cursor: isDragging ? "grabbing" : "grab",
-                            transform: isDragging
-                                ? `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${dragOffset.x * 0.08}deg) scale(1.03)`
-                                : "translate(0, 0)",
-                            boxShadow: isDragging ? "0 10px 25px -5px rgba(0, 0, 0, 0.25)" : "none",
-                            transition: !isDragging ? "transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s" : "none",
+                            transform: `translate3d(${dragOffset.x}px, ${dragOffset.y}px, 0)`,
                             touchAction: "none",
                         }}
-                        title="mixzi (¡levanta el logo!)"
                     >
                         <img
                             src={mixziLogo}
-                            alt="mixzi"
+                            alt="Mixzi"
+                            className="h-8 w-auto max-w-[124px] object-contain select-none pointer-events-none drop-shadow-sm"
                             draggable={false}
-                            className="mixzi-logo block h-8 sm:h-10 w-auto object-contain pointer-events-none"
                         />
-                    </NavLink>
+                    </div>
                 </div>
 
-                {/* NAVEGACIÓN SEGMENTADA EN DESKTOP CON PÍLDORA ANIMADA FLUIDA */}
-                <nav aria-label="Navegación principal desktop" className="hidden md:flex items-center">
-                    <div
-                        ref={desktopNavRef}
-                        className="relative flex items-center rounded-xl border border-border/80 bg-muted/40 p-1 shadow-2xs backdrop-blur-md"
-                    >
-                        {/* PÍLDORA RESALTADA FLUIDA ANIMADA */}
-                        <div
-                            className="pointer-events-none absolute top-1 bottom-1 rounded-lg bg-background shadow-xs ring-1 ring-border transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
-                            style={{
-                                left: `${pillStyle.left}px`,
-                                width: `${pillStyle.width}px`,
-                                opacity: pillStyle.opacity,
-                            }}
-                        />
-
-                        <NavLink
-                            ref={dashboardTabRef}
-                            to={RoutePaths.MixziDashboard}
-                            className={cn(
-                                "relative z-10 flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-colors duration-200",
-                                isDashboardActive
-                                    ? "text-foreground font-bold"
-                                    : "text-muted-foreground hover:text-foreground",
-                            )}
-                        >
-                            <Gauge className="size-4" />
-                            <span>Dashboard</span>
-                            <span className="hidden lg:inline-flex items-center rounded border border-border/50 bg-muted/60 px-1 text-[10px] text-muted-foreground font-mono">
-                                ⌘1
-                            </span>
-                        </NavLink>
-
-                        <NavLink
-                            ref={stockTabRef}
-                            to={RoutePaths.MixziStock}
-                            className={cn(
-                                "relative z-10 flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-colors duration-200",
-                                isStockActive
-                                    ? "text-foreground font-bold"
-                                    : "text-muted-foreground hover:text-foreground",
-                            )}
-                        >
-                            <Package className="size-4" />
-                            <span>Stock & Inventario</span>
-                            <span className="hidden lg:inline-flex items-center rounded border border-border/50 bg-muted/60 px-1 text-[10px] text-muted-foreground font-mono">
-                                ⌘2
-                            </span>
-                        </NavLink>
-                    </div>
-                </nav>
-
-                {/* ACCIONES Y BADGE EN VIVO SITUADO A LA DERECHA */}
-                <div className="flex items-center gap-2 sm:gap-2.5">
-                    {/* BADGE DE SERVICIO EN VIVO (A la derecha en desktop y móvil) */}
-                    <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] sm:text-xs font-semibold text-emerald-600 dark:text-emerald-400 select-none shadow-2xs">
-                        <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span>En vivo</span>
-                    </div>
-
-                    {/* Botón Desktop Agregar Insumo */}
-                    <NavLink
-                        to="/mixzistock?action=add-item&block=Frescos"
-                        className="hidden md:inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-xs hover:opacity-90 active:scale-98 transition-all"
-                    >
-                        <Plus className="size-3.5" />
-                        <span>+ Movimiento</span>
-                    </NavLink>
-
-                    {/* Botón Desktop Darkmode */}
-                    <button
-                        aria-label={`Cambiar a modo ${theme === "dark" ? "claro" : "oscuro"}`}
-                        aria-pressed={theme === "dark"}
-                        className="hidden md:inline-flex size-9 items-center justify-center rounded-lg border border-border/80 bg-card text-foreground transition-all hover:bg-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary shadow-2xs"
-                        onClick={handleThemeToggle}
-                        onKeyDown={handleThemeKeyboardActivation}
-                        title={`Cambiar a modo ${theme === "dark" ? "claro" : "oscuro"}`}
-                        type="button"
-                    >
-                        {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-                    </button>
-                </div>
-            </div>
-
-            {/* BARRA DE PESTAÑAS INTEGRADA EN CABECERA SUPERIOR PARA MÓVIL */}
-            {/* Libera el 100% del área inferior para que nada tape botones flotantes ni formularios */}
-            <div className="md:hidden border-t border-border/50 bg-muted/20 px-3.5 py-1.5">
                 <nav
-                    aria-label="Pestañas móviles"
-                    className="grid grid-cols-2 gap-1 rounded-xl bg-muted/50 p-1 border border-border/60 shadow-2xs"
+                    className="relative hidden md:flex items-center gap-1 rounded-full border border-border/70 bg-card/90 p-1 shadow-sm backdrop-blur-md"
+                    aria-label="Navegación principal"
                 >
+                    <span
+                        className="pointer-events-none absolute inset-y-1 rounded-full bg-primary shadow-sm shadow-primary/30 transition-all duration-300 ease-out"
+                        style={{
+                            width: "calc(33.333% - 5px)",
+                            transform: `translateX(calc(${activeIndex * 100}% + ${activeIndex * 4}px))`,
+                        }}
+                        aria-hidden="true"
+                    />
+
                     <NavLink
                         to={RoutePaths.MixziDashboard}
-                        className={cn(
-                            "flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 active:scale-98",
-                            isDashboardActive
-                                ? "bg-background text-foreground shadow-xs ring-1 ring-border font-bold"
-                                : "text-muted-foreground hover:text-foreground",
-                        )}
+                        className={getLinkClasses(RoutePaths.MixziDashboard)}
+                        title="Dashboard (⌘1)"
                     >
-                        <Gauge className="size-3.5" />
+                        <Gauge className="h-3.5 w-3.5" />
                         <span>Dashboard</span>
                     </NavLink>
 
                     <NavLink
                         to={RoutePaths.MixziStock}
-                        className={cn(
-                            "flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 active:scale-98",
-                            isStockActive
-                                ? "bg-background text-foreground shadow-xs ring-1 ring-border font-bold"
-                                : "text-muted-foreground hover:text-foreground",
-                        )}
+                        className={getLinkClasses(RoutePaths.MixziStock)}
+                        title="Gestión de Stock (⌘2)"
                     >
-                        <Package className="size-3.5" />
+                        <Package className="h-3.5 w-3.5" />
                         <span>Stock</span>
+                    </NavLink>
+
+                    <NavLink
+                        to={RoutePaths.MixziProfile}
+                        className={getLinkClasses(RoutePaths.MixziProfile)}
+                        title="Perfil y Tenant (⌘3)"
+                    >
+                        <User className="h-3.5 w-3.5" />
+                        <span>Perfil</span>
+                    </NavLink>
+                </nav>
+
+                <div className="flex items-center gap-2">
+                    <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        En vivo
+                    </span>
+
+                    <button
+                        type="button"
+                        onClick={toggleTheme}
+                        aria-label={isThemeDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/80 bg-card text-foreground transition-all hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    >
+                        {isThemeDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                    </button>
+                </div>
+            </div>
+
+            <div className="flex md:hidden border-t border-border/60 bg-card/95 px-3 py-1.5 backdrop-blur-md">
+                <nav className="flex w-full items-center gap-1.5" aria-label="Navegación móvil">
+                    <NavLink
+                        to={RoutePaths.MixziDashboard}
+                        className={getMobileLinkClasses(RoutePaths.MixziDashboard)}
+                    >
+                        <Gauge className="h-3.5 w-3.5" />
+                        <span>Dashboard</span>
+                    </NavLink>
+
+                    <NavLink
+                        to={RoutePaths.MixziStock}
+                        className={getMobileLinkClasses(RoutePaths.MixziStock)}
+                    >
+                        <Package className="h-3.5 w-3.5" />
+                        <span>Stock</span>
+                    </NavLink>
+
+                    <NavLink
+                        to={RoutePaths.MixziProfile}
+                        className={getMobileLinkClasses(RoutePaths.MixziProfile)}
+                    >
+                        <User className="h-3.5 w-3.5" />
+                        <span>Perfil</span>
                     </NavLink>
                 </nav>
             </div>

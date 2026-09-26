@@ -2,9 +2,16 @@ import React from "react";
 import {
     Gauge,
     Package,
+    User,
+    LogIn,
 } from "lucide-react";
 import { Navigate, type RouteObject } from "react-router-dom";
-import { MixziDashboardPageLazy, MixziStockPageLazy } from "./lazypages";
+import {
+    MixziDashboardPageLazy,
+    MixziStockPageLazy,
+    MixziLoginPageLazy,
+    MixziProfilePageLazy,
+} from "./lazypages";
 
 type LazyRoutes = RouteObject & {
     name: string;
@@ -15,6 +22,8 @@ type LazyRoutes = RouteObject & {
 export const RoutePaths = {
     MixziStock: "/mixzistock",
     MixziDashboard: "/mixzidashboard",
+    MixziLogin: "/login",
+    MixziProfile: "/profile",
     Splat: "/*",
 } as const;
 
@@ -36,8 +45,22 @@ export const routes: LazyRoutes[] = [
         sidebarIcon: <Package aria-hidden="true" />,
     },
     {
+        path: RoutePaths.MixziProfile,
+        Component: MixziProfilePageLazy,
+        name: "Perfil",
+        label: "Perfil",
+        sidebarIcon: <User aria-hidden="true" />,
+    },
+    {
+        path: RoutePaths.MixziLogin,
+        Component: MixziLoginPageLazy,
+        name: "Login",
+        label: "Acceso",
+        sidebarIcon: <LogIn aria-hidden="true" />,
+    },
+    {
         path: RoutePaths.Splat,
         Component: () => <Navigate to={RoutePaths.MixziDashboard} />,
         name: "Splat",
     }
-]
+];
