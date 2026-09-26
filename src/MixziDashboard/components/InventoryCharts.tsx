@@ -651,22 +651,22 @@ export const InventoryCharts: React.FC<InventoryChartsProps> = ({
               })}
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-              <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+              <span className="text-[10px] md:text-[8px] text-muted-foreground uppercase font-bold tracking-wider">
                 {selectedCategory ? "Filtrado" : "Inmovilizado"}
               </span>
-              <span className="text-sm font-extrabold tracking-tight font-mono text-foreground transition-all">
+              <span className="text-sm md:text-[11px] font-extrabold tracking-tight font-mono text-foreground transition-all">
                 {selectedCategory 
                   ? categories.find(c => c.name === selectedCategory)?.amount 
                   : currentData.totalVal}
               </span>
-              <span className="text-[9px] text-muted-foreground">
+              <span className="text-[9px] md:text-[7.5px] text-muted-foreground">
                 {selectedCategory || `${categories.length} Familias`}
               </span>
             </div>
           </div>
 
           {/* Leyenda interactiva de categorías */}
-          <div className="w-full space-y-1.5 flex-1">
+          <div className="w-full space-y-1.5 md:space-y-1 flex-1 min-w-0">
             {categories.map((cat, i) => {
               const isSelected = selectedCategory === cat.name;
               return (
@@ -677,23 +677,23 @@ export const InventoryCharts: React.FC<InventoryChartsProps> = ({
                     setSelectedCategory(next);
                     if (next && onSelectCategory) onSelectCategory(next);
                   }}
-                  className={`w-full flex items-center justify-between text-xs p-1.5 rounded-lg transition-all duration-200 text-left ${
+                  className={`w-full flex items-center justify-between text-xs md:text-[9px] p-1.5 md:p-1 md:px-2 rounded-lg transition-all duration-200 text-left ${
                     isSelected 
                       ? "bg-primary/10 border border-primary/30 font-semibold shadow-xs scale-[1.01]" 
                       : "hover:bg-muted/50 border border-transparent"
                   }`}
                 >
-                  <div className="flex items-center gap-2 truncate">
+                  <div className="flex items-center gap-2 md:gap-1.5 truncate min-w-0">
                     <span 
-                      className="size-2.5 rounded-full shrink-0 transition-transform group-hover:scale-125" 
+                      className="size-2.5 md:size-2 rounded-full shrink-0 transition-transform group-hover:scale-125" 
                       style={{ backgroundColor: cat.stroke }} 
                     />
                     <span className="truncate">{cat.name}</span>
-                    <span className="text-[10px] text-muted-foreground">({cat.items} arts)</span>
+                    <span className="text-[10px] md:text-[8px] text-muted-foreground shrink-0">({cat.items})</span>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="font-mono font-medium">{cat.amount}</span>
-                    <span className="text-[10px] font-bold text-muted-foreground w-8 text-right font-mono">
+                  <div className="flex items-center gap-2 md:gap-1.5 shrink-0 ml-1">
+                    <span className="font-mono font-medium text-xs md:text-[9px]">{cat.amount}</span>
+                    <span className="text-[10px] md:text-[8px] font-bold text-muted-foreground w-8 md:w-6 text-right font-mono">
                       {cat.value}
                     </span>
                   </div>
