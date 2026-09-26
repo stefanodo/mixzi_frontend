@@ -1,4 +1,4 @@
-import { ProfilePage } from "@/MixziProfile/ProfilePage";
+import { ProfilePage } from "../MixziProfile/ProfilePage";
 
 export const MixziProfilePage = () => {
   return <ProfilePage />;
