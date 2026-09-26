@@ -1,4 +1,4 @@
-import { Gauge, Heart, Moon, Package, Plus, Sun, User } from "lucide-react"
+import { Gauge, Heart, Moon, Package, Plus, Sun, User, LogIn } from "lucide-react"
 import { type KeyboardEvent, type PointerEvent, useEffect, useRef, useState } from "react"
 import { matchPath, NavLink, useLocation, useNavigate } from "react-router-dom"
 import { RoutePaths } from "../../router/routes"
@@ -29,6 +29,8 @@ export const NavigationComponent = () => {
         ? 1
         : location.pathname.startsWith(RoutePaths.MixziProfile)
         ? 2
+        : location.pathname.startsWith(RoutePaths.MixziLogin)
+        ? 3
         : 0
 
     const resetDrag = () => {
@@ -85,6 +87,9 @@ export const NavigationComponent = () => {
             } else if (event.key === "3") {
                 event.preventDefault()
                 navigate(RoutePaths.MixziProfile)
+            } else if (event.key === "4") {
+                event.preventDefault()
+                navigate(RoutePaths.MixziLogin)
             }
         }
 
@@ -191,6 +196,15 @@ export const NavigationComponent = () => {
                         <User className="h-3.5 w-3.5" />
                         <span>Perfil</span>
                     </NavLink>
+
+                    <NavLink
+                        to={RoutePaths.MixziLogin}
+                        className={getLinkClasses(RoutePaths.MixziLogin)}
+                        title="Acceso / Login (⌘4)"
+                    >
+                        <LogIn className="h-3.5 w-3.5" />
+                        <span>Acceso</span>
+                    </NavLink>
                 </nav>
 
                 <div className="flex items-center gap-2">
@@ -234,6 +248,14 @@ export const NavigationComponent = () => {
                     >
                         <User className="h-3.5 w-3.5" />
                         <span>Perfil</span>
+                    </NavLink>
+
+                    <NavLink
+                        to={RoutePaths.MixziLogin}
+                        className={getMobileLinkClasses(RoutePaths.MixziLogin)}
+                    >
+                        <LogIn className="h-3.5 w-3.5" />
+                        <span>Acceso</span>
                     </NavLink>
                 </nav>
             </div>
