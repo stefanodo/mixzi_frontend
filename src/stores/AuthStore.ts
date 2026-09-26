@@ -1,7 +1,7 @@
 import { action, makeObservable, observable } from "mobx";
 import ApiService from "../api/ApiService";
-import { AuthApi } from "@/apis/apis/AuthApi";
-import { Configuration as ApiConfig } from "@/apis/runtime";
+import { AuthApi } from "@/_generated/apis/AuthApi";
+import { Configuration as ApiConfig } from "@/_generated/runtime";
 import { MIXZI_API_BASE } from "@/config/envVariables";
 
 export interface TenantPermissions {
