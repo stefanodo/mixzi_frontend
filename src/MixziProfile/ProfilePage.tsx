@@ -21,7 +21,7 @@ import {
   Truck,
   Users
 } from "lucide-react";
-import AuthStore, { UserProfile } from "@/stores/AuthStore";
+import AuthStore, { type UserProfile } from "@/stores/AuthStore";
 import { RoutePaths } from "@/router/routes";
 
 const authStore = new AuthStore();
