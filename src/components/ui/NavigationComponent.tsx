@@ -149,7 +149,7 @@ export const NavigationComponent = observer(() => {
         )
     }
 
-    const isThemeDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)
+    const isThemeDark = theme === "dark"
 
     const handleLogout = () => {
         setIsUserMenuOpen(false)
