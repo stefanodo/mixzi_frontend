@@ -21,10 +21,9 @@ import {
   Truck,
   Users
 } from "lucide-react";
-import AuthStore, { type UserProfile } from "@/stores/AuthStore";
+import { authStore, type UserProfile } from "@/stores/AuthStore";
 import { RoutePaths } from "@/router/routes";
 
-const authStore = new AuthStore();
 
 export const ProfilePage: React.FC = observer(() => {
   const navigate = useNavigate();
