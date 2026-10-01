@@ -100,7 +100,7 @@ export const NavigationComponent = () => {
     const getLinkClasses = (path: string) => {
         const isActive = matchPath({ path, end: false }, location.pathname)
         return cn(
-            "relative z-10 flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+            "relative z-10 flex items-center rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
             isActive
                 ? "text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -129,8 +129,9 @@ export const NavigationComponent = () => {
                         aria-hidden="true"
                     >
                         <Heart className="h-2.5 w-2.5 text-rose-500 fill-rose-500 animate-pulse drop-shadow-sm" />
-                        <span className="text-[7.5px] font-bold text-foreground/85 leading-tight tracking-tight mt-0.5 whitespace-nowrap">
-                            Made with Love by mixzi team!
+                        <span className="flex flex-col text-[7.5px] font-bold text-foreground/85 leading-tight tracking-tight mt-0.5 whitespace-nowrap">
+                            <span>Made with Love</span>
+                            <span>by mixzi team</span>
                         </span>
                     </div>
 
@@ -153,7 +154,7 @@ export const NavigationComponent = () => {
                             src={mixziLogo}
                             alt="Mixzi"
                             className="h-8 w-auto max-w-[124px] object-contain select-none pointer-events-none drop-shadow-sm"
-                            draggable={false}
+                            draggable={true}
                         />
                     </div>
                 </div>
@@ -166,8 +167,8 @@ export const NavigationComponent = () => {
                     <span
                         className="pointer-events-none absolute inset-y-1 rounded-full bg-primary shadow-sm shadow-primary/30 transition-all duration-300 ease-out"
                         style={{
-                            width: "calc(50% - 4px)",
-                            transform: `translateX(calc(${mainActiveIndex * 100}% + ${mainActiveIndex * 4}px))`,
+                            width: "calc(50% - 10px)",
+                            transform: `translateX(calc(${mainActiveIndex * 100}% + ${mainActiveIndex * 10}px))`,
                         }}
                         aria-hidden="true"
                     />
@@ -177,8 +178,10 @@ export const NavigationComponent = () => {
                         className={getLinkClasses(RoutePaths.MixziDashboard)}
                         title="Dashboard (⌘1)"
                     >
-                        <Gauge className="h-3.5 w-3.5" />
-                        <span>Dashboard</span>
+                        <span className="-translate-x-2 flex items-center gap-2">
+                            <Gauge className="h-3.5 w-3.5" />
+                            <span>Dashboard</span>
+                        </span>
                     </NavLink>
 
                     <NavLink
@@ -186,8 +189,10 @@ export const NavigationComponent = () => {
                         className={getLinkClasses(RoutePaths.MixziStock)}
                         title="Gestión de Stock (⌘2)"
                     >
-                        <Package className="h-3.5 w-3.5" />
-                        <span>Stock</span>
+                        <span className="-translate-x-2 flex items-center gap-2">
+                            <Package className="h-3.5 w-3.5" />
+                            <span>Stock</span>
+                        </span>
                     </NavLink>
                 </nav>
 

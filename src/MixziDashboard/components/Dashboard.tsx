@@ -42,7 +42,7 @@ export const Dashboard = () => {
   ];
 
   return (
-    <div className="space-y-6 pb-16 max-w-7xl mx-auto px-2 sm:px-4 md:px-6">
+    <div className="space-y-6 pb-16">
       {/* 1. Header & Live Resto-Cockpit Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2">
         <div className="space-y-1">

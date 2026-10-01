@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import AuthStore from "@/stores/AuthStore";
 import { RoutePaths } from "@/router/routes";
+import mixziLogo from "../assets/mixi logo.svg";
 
 // Instancia compartida para acceso a Auth
 const authStore = new AuthStore();
@@ -119,10 +120,16 @@ export const LoginPage: React.FC = observer(() => {
         {/* Cabecera de la Marca */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 mb-3">
-            <ChefHat className="w-8 h-8" />
+              <img
+                  src={mixziLogo}
+                  alt="Mixzi"
+                  className="h-8 w-auto max-w-[124px] object-contain select-none pointer-events-none drop-shadow-sm"
+                  draggable={false}
+              />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground font-quicksand">
-            Mixzi <span className="text-primary font-normal text-2xl">BOH</span>
+            
+            <span className="text-primary font-normal text-2xl">mixzi</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Plataforma Integral de Gestión de Cocina, Stock y Operaciones
