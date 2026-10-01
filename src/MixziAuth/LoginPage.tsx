@@ -17,12 +17,9 @@ import {
   Layers,
   ChefHat
 } from "lucide-react";
-import AuthStore from "@/stores/AuthStore";
+import { authStore } from "@/stores/AuthStore";
 import { RoutePaths } from "@/router/routes";
 import mixziLogo from "../assets/mixi logo.svg";
-
-// Instancia compartida para acceso a Auth
-const authStore = new AuthStore();
 
 export const LoginPage: React.FC = observer(() => {
   const navigate = useNavigate();
