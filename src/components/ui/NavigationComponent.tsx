@@ -79,9 +79,9 @@ export const NavigationComponent = observer(() => {
         resetDrag()
     }
 
-    // Cerrar menú de usuario al hacer clic fuera o presionar Escape
+    // Cerrar menú de usuario al hacer clic/tocar fuera o presionar Escape
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
+        const handleOutsideAction = (event: MouseEvent | TouchEvent) => {
             if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
                 setIsUserMenuOpen(false)
             }
@@ -94,12 +94,14 @@ export const NavigationComponent = observer(() => {
         }
 
         if (isUserMenuOpen) {
-            document.addEventListener("mousedown", handleClickOutside)
+            document.addEventListener("mousedown", handleOutsideAction)
+            document.addEventListener("touchstart", handleOutsideAction, { passive: true })
             document.addEventListener("keydown", handleEscape)
         }
 
         return () => {
-            document.removeEventListener("mousedown", handleClickOutside)
+            document.removeEventListener("mousedown", handleOutsideAction)
+            document.removeEventListener("touchstart", handleOutsideAction)
             document.removeEventListener("keydown", handleEscape)
         }
     }, [isUserMenuOpen])
@@ -298,10 +300,19 @@ export const NavigationComponent = observer(() => {
                                 <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform duration-200", isUserMenuOpen && "rotate-180")} />
                             </button>
 
+                            {/* Backdrop para cerrar al tocar fuera en cualquier dispositivo */}
+                            {isUserMenuOpen && (
+                                <div
+                                    className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px] md:bg-transparent"
+                                    onClick={() => setIsUserMenuOpen(false)}
+                                    aria-hidden="true"
+                                />
+                            )}
+
                             {/* Dropdown Menu Desplegable */}
                             {isUserMenuOpen && (
                                 <div
-                                    className="absolute right-0 mt-2 w-64 rounded-2xl border border-border/80 bg-card/95 p-2 shadow-xl backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-150 z-50 text-foreground"
+                                    className="absolute right-0 mt-2 w-72 rounded-2xl border border-border/80 bg-card/98 p-2.5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-150 z-50 text-foreground"
                                     role="menu"
                                     aria-orientation="vertical"
                                 >
@@ -364,14 +375,14 @@ export const NavigationComponent = observer(() => {
                 </div>
             </div>
 
-            {/* Mobile Bottom Navigation Bar (3 tabs contextuales: Dashboard, Stock, Acceso/Perfil) */}
-            <div className="flex md:hidden border-t border-border/60 bg-card/95 px-2 py-1.5 backdrop-blur-md">
-                <nav className="flex w-full items-center gap-1" aria-label="Navegación móvil">
+            {/* Mobile Bottom Navigation Bar: Solo Dashboard y Stock (el perfil se gestiona exclusivamente desde el icono superior) */}
+            <div className="flex md:hidden border-t border-border/60 bg-card/95 px-3 py-1.5 backdrop-blur-md">
+                <nav className="flex w-full items-center justify-around gap-2" aria-label="Navegación móvil">
                     <NavLink
                         to={RoutePaths.MixziDashboard}
                         className={getMobileLinkClasses(RoutePaths.MixziDashboard)}
                     >
-                        <Gauge className="h-3.5 w-3.5" />
+                        <Gauge className="h-4 w-4" />
                         <span>Dashboard</span>
                     </NavLink>
 
@@ -379,27 +390,9 @@ export const NavigationComponent = observer(() => {
                         to={RoutePaths.MixziStock}
                         className={getMobileLinkClasses(RoutePaths.MixziStock)}
                     >
-                        <Package className="h-3.5 w-3.5" />
+                        <Package className="h-4 w-4" />
                         <span>Stock</span>
                     </NavLink>
-
-                    {authStore.isAuthenticated ? (
-                        <NavLink
-                            to={RoutePaths.MixziProfile}
-                            className={getMobileLinkClasses(RoutePaths.MixziProfile)}
-                        >
-                            <User className="h-3.5 w-3.5" />
-                            <span>Mi Perfil</span>
-                        </NavLink>
-                    ) : (
-                        <NavLink
-                            to={RoutePaths.MixziLogin}
-                            className={getMobileLinkClasses(RoutePaths.MixziLogin)}
-                        >
-                            <LogIn className="h-3.5 w-3.5" />
-                            <span>Entrar</span>
-                        </NavLink>
-                    )}
                 </nav>
             </div>
         </header>
