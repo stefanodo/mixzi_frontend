@@ -15,7 +15,8 @@ import {
   FileCheck,
   ChevronRight,
   Layers,
-  ChefHat
+  ChefHat,
+  X
 } from "lucide-react";
 import { authStore } from "@/stores/AuthStore";
 import { RoutePaths } from "@/router/routes";
@@ -23,6 +24,17 @@ import mixziLogo from "../assets/mixi logo.svg";
 
 export const LoginPage: React.FC = observer(() => {
   const navigate = useNavigate();
+
+  // Cerrar la página de login con Escape
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        navigate(RoutePaths.MixziDashboard);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [navigate]);
 
   // Estados de vista
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
@@ -133,8 +145,17 @@ export const LoginPage: React.FC = observer(() => {
           </p>
         </div>
 
-        {/* Card Principal */}
-        <div className="bg-card border border-border/80 shadow-2xl rounded-2xl overflow-hidden backdrop-blur-xl">
+        {/* Card Principal con botón de cerrar hacia el Dashboard */}
+        <div className="relative bg-card border border-border/80 shadow-2xl rounded-2xl overflow-hidden backdrop-blur-xl">
+          <button
+            type="button"
+            onClick={() => navigate(RoutePaths.MixziDashboard)}
+            className="absolute top-3.5 right-3.5 z-20 p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            title="Cerrar y volver al Dashboard (Esc)"
+            aria-label="Cerrar y volver al Dashboard"
+          >
+            <X className="w-5 h-5" />
+          </button>
           {/* Alerta de cuenta bloqueada */}
           {authStore.isAccountLocked ? (
             <div className="p-6 sm:p-8 space-y-6">
@@ -313,13 +334,22 @@ export const LoginPage: React.FC = observer(() => {
                       )}
                     </button>
 
-                    <div className="pt-3 border-t border-border/60">
+                    <div className="pt-3 border-t border-border/60 space-y-3">
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span className="flex items-center gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                           Multi-tenant aislado
                         </span>
                         <span>API OpenAPI 2026 Compliant</span>
+                      </div>
+                      <div className="text-center pt-1">
+                        <button
+                          type="button"
+                          onClick={() => navigate(RoutePaths.MixziDashboard)}
+                          className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 transition"
+                        >
+                          ← Volver al Dashboard sin iniciar sesión
+                        </button>
                       </div>
                     </div>
                   </form>
