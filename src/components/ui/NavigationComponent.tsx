@@ -33,10 +33,12 @@ export const NavigationComponent = observer(() => {
     const userMenuRef = useRef<HTMLDivElement>(null)
 
     const isStockActive = location.pathname.startsWith(RoutePaths.MixziStock)
-    const isDashboardActive = location.pathname.startsWith(RoutePaths.MixziDashboard) || (!isStockActive && !location.pathname.startsWith(RoutePaths.MixziProfile) && !location.pathname.startsWith(RoutePaths.MixziLogin))
+    const isDashboardActive = location.pathname.startsWith(RoutePaths.MixziDashboard) || location.pathname === "/"
     const isProfileActive = location.pathname.startsWith(RoutePaths.MixziProfile)
     const isLoginActive = location.pathname.startsWith(RoutePaths.MixziLogin)
 
+    // Solo activamos la píldora si estamos efectivamente en Dashboard o Stock
+    const hasMainActiveRoute = isStockActive || isDashboardActive
     const mainActiveIndex = isStockActive ? 1 : 0
 
     const resetDrag = () => {
@@ -132,7 +134,7 @@ export const NavigationComponent = observer(() => {
     }, [navigate])
 
     const getLinkClasses = (path: string) => {
-        const isActive = matchPath({ path, end: false }, location.pathname)
+        const isActive = path === RoutePaths.MixziDashboard ? isDashboardActive : isStockActive
         return cn(
             "relative z-10 flex items-center rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
             isActive
@@ -211,12 +213,14 @@ export const NavigationComponent = observer(() => {
                     className="relative hidden md:flex items-center rounded-full border border-border/80 bg-muted/60 p-1 shadow-inner backdrop-blur-sm"
                     aria-label="Navegación principal"
                 >
-                    <div
-                        className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-primary shadow-sm transition-transform duration-300 ease-out pointer-events-none"
-                        style={{
-                            transform: `translateX(${mainActiveIndex * 100}%)`,
-                        }}
-                    />
+                    {hasMainActiveRoute && (
+                        <div
+                            className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-primary shadow-sm transition-all duration-300 ease-out pointer-events-none"
+                            style={{
+                                transform: `translateX(${mainActiveIndex * 100}%)`,
+                            }}
+                        />
+                    )}
 
                     <NavLink
                         to={RoutePaths.MixziDashboard}
