@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { observer } from "mobx-react-lite";
 import { useNavigate } from "react-router-dom";
 import {
-  User,
   Shield,
   Building2,
   Key,
@@ -12,16 +11,14 @@ import {
   Calendar,
   Layers,
   Sparkles,
-  RefreshCw,
   Mail,
-  Sliders,
   FileSpreadsheet,
   ScanLine,
   Trash2,
   Truck,
   Users
 } from "lucide-react";
-import { authStore, type UserProfile } from "@/stores/AuthStore";
+import { authStore } from "@/stores/AuthStore";
 import { RoutePaths } from "@/router/routes";
 
 
@@ -35,7 +32,7 @@ export const ProfilePage: React.FC = observer(() => {
 
   const handleLogout = () => {
     authStore.logout();
-    navigate(RoutePaths.MixziDashboard);
+    navigate(RoutePaths.MixziLogin);
   };
 
   const handleSaveTenant = (e: React.FormEvent) => {
@@ -277,21 +274,6 @@ export const ProfilePage: React.FC = observer(() => {
                   Capacidades asignadas al rol operativo de tu perfil actual en este restaurante.
                 </p>
               </div>
-
-              {/* Selector de rol para simulación y pruebas rápidas */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-muted-foreground">Simular Rol:</span>
-                <select
-                  value={user?.role}
-                  onChange={(e) => authStore.switchRole(e.target.value as any)}
-                  className="text-xs px-3 py-1.5 rounded-xl border border-input bg-background font-semibold focus:ring-2 focus:ring-primary outline-none"
-                >
-                  <option value="owner">Owner (Propietario)</option>
-                  <option value="admin">Admin (Gerente)</option>
-                  <option value="head_chef">Head Chef</option>
-                  <option value="staff">Personal Staff</option>
-                </select>
-              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
@@ -331,15 +313,8 @@ export const ProfilePage: React.FC = observer(() => {
           </h2>
 
           <div className="space-y-3">
-            <div>
-              <label className="text-xs font-semibold text-foreground block mb-1">Access Token (Bearer)</label>
-              <div className="p-3 rounded-xl bg-muted font-mono text-xs text-muted-foreground break-all select-all">
-                {authStore.accessToken || "jwt_bearer_token_mixzi_active"}
-              </div>
-            </div>
-
-            <div className="pt-2 text-xs text-muted-foreground">
-              Los tokens se renuevan de acuerdo al protocolo del <code>AuthController</code> con comprobación de permisos para cada endpoint de la API.
+            <div className="text-xs text-muted-foreground">
+              Tu sesión se renueva automáticamente y se cierra si no puede renovarse. Los permisos de cada endpoint los valida el servidor.
             </div>
           </div>
         </div>

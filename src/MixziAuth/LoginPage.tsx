@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { observer } from "mobx-react-lite";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import {
   Lock,
   Mail,
@@ -12,29 +12,15 @@ import {
   EyeOff,
   Sparkles,
   KeyRound,
-  FileCheck,
-  ChevronRight,
-  Layers,
-  ChefHat,
-  X
+  ChevronRight
 } from "lucide-react";
-import { authStore } from "@/stores/AuthStore";
+import { authStore, type RegistrationSession } from "@/stores/AuthStore";
 import { RoutePaths } from "@/router/routes";
 import mixziLogo from "../assets/mixi logo.svg";
 
 export const LoginPage: React.FC = observer(() => {
-  const navigate = useNavigate();
-
-  // Cerrar la página de login con Escape
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        navigate(RoutePaths.MixziDashboard);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [navigate]);
+  const location = useLocation();
+  const redirectTo = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? RoutePaths.MixziDashboard;
 
   // Estados de vista
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
@@ -42,8 +28,8 @@ export const LoginPage: React.FC = observer(() => {
   const [showPassword, setShowPassword] = useState(false);
 
   // Formulario Login
-  const [loginEmail, setLoginEmail] = useState("chef@mixzi.rest");
-  const [loginPassword, setLoginPassword] = useState("Restaurante2026!");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
 
   // Formulario Registro Paso 1
   const [regFirstName, setRegFirstName] = useState("");
@@ -51,7 +37,7 @@ export const LoginPage: React.FC = observer(() => {
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [step1Token, setStep1Token] = useState("");
+  const [registration, setRegistration] = useState<RegistrationSession | null>(null);
 
   // Formulario Registro Paso 2 (Tenant y Plan)
   const [restaurantName, setRestaurantName] = useState("");
@@ -64,10 +50,7 @@ export const LoginPage: React.FC = observer(() => {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ok = await authStore.login(loginEmail, loginPassword);
-    if (ok) {
-      navigate(RoutePaths.MixziDashboard);
-    }
+    await authStore.login(loginEmail, loginPassword);
   };
 
   const handleRegisterStep1 = async (e: React.FormEvent) => {
@@ -77,7 +60,7 @@ export const LoginPage: React.FC = observer(() => {
       return;
     }
 
-    const res = await authStore.registerStep1({
+    const session = await authStore.registerStep1({
       firstName: regFirstName,
       lastName: regLastName,
       email: regEmail,
@@ -86,42 +69,49 @@ export const LoginPage: React.FC = observer(() => {
       termsVersion: "1.0",
     });
 
-    if (res.success && res.token) {
-      setStep1Token(res.token);
+    if (session) {
+      setRegistration(session);
       setRegisterStep(2);
     }
   };
 
   const handleRegisterStep2 = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!registration) return;
     if (!restaurantName.trim()) {
       authStore.setErrorMessage("Por favor indica el nombre de tu restaurante o establecimiento.");
       return;
     }
 
-    const ok = await authStore.completeRegistrationStep2(step1Token, {
+    await authStore.completeRegistrationStep2(registration, {
       restaurantName,
       address: restaurantAddress,
       postalCode: restaurantPostalCode,
       planId: selectedPlanId,
     });
-
-    if (ok) {
-      navigate(RoutePaths.MixziDashboard);
-    }
   };
 
   const handleConfirmOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ok = await authStore.confirmUnlockCode(authStore.lockedEmail || loginEmail, otpCode);
-    if (ok) {
-      navigate(RoutePaths.MixziDashboard);
-    }
+    await authStore.confirmUnlockCode(authStore.lockedEmail || loginEmail, otpCode);
   };
 
   const handleResendOtp = async () => {
     await authStore.requestUnlockCode(authStore.lockedEmail || loginEmail);
   };
+
+  const handleTroubleSigningIn = async () => {
+    if (!loginEmail) {
+      authStore.setErrorMessage("Introduce tu correo para enviarte un código de acceso.");
+      return;
+    }
+    authStore.setAccountLocked(true, loginEmail);
+    await authStore.requestUnlockCode(loginEmail);
+  };
+
+  if (authStore.isAuthenticated) {
+    return <Navigate to={redirectTo} replace />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/40 to-background flex items-center justify-center p-4 sm:p-6 lg:p-8">
@@ -145,17 +135,7 @@ export const LoginPage: React.FC = observer(() => {
           </p>
         </div>
 
-        {/* Card Principal con botón de cerrar hacia el Dashboard */}
         <div className="relative bg-card border border-border/80 shadow-2xl rounded-2xl overflow-hidden backdrop-blur-xl">
-          <button
-            type="button"
-            onClick={() => navigate(RoutePaths.MixziDashboard)}
-            className="absolute top-3.5 right-3.5 z-20 p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            title="Cerrar y volver al Dashboard (Esc)"
-            aria-label="Cerrar y volver al Dashboard"
-          >
-            <X className="w-5 h-5" />
-          </button>
           {/* Alerta de cuenta bloqueada */}
           {authStore.isAccountLocked ? (
             <div className="p-6 sm:p-8 space-y-6">
@@ -164,7 +144,7 @@ export const LoginPage: React.FC = observer(() => {
                 <div>
                   <h3 className="text-sm font-semibold">Cuenta protegida por seguridad</h3>
                   <p className="text-xs mt-0.5 opacity-90">
-                    5 intentos fallidos consecutivos detectados (código GoTrue). Introduce el código OTP de desbloqueo enviado a tu correo.
+                    Demasiados intentos fallidos o problemas de acceso. Introduce el código de desbloqueo enviado a tu correo.
                   </p>
                 </div>
               </div>
@@ -178,12 +158,14 @@ export const LoginPage: React.FC = observer(() => {
               <form onSubmit={handleConfirmOtp} className="space-y-4">
                 <div>
                   <label className="text-xs font-semibold text-foreground uppercase tracking-wider block mb-1.5">
-                    Código de Desbloqueo (POST /auth/confirm-login-code)
+                    Código de Desbloqueo
                   </label>
                   <div className="relative">
                     <KeyRound className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input
                       type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
                       value={otpCode}
                       onChange={(e) => setOtpCode(e.target.value)}
                       placeholder="Ej. 123456"
@@ -271,6 +253,7 @@ export const LoginPage: React.FC = observer(() => {
                         <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                         <input
                           type="email"
+                          autoComplete="username"
                           value={loginEmail}
                           onChange={(e) => setLoginEmail(e.target.value)}
                           placeholder="chef@restaurante.com"
@@ -287,7 +270,7 @@ export const LoginPage: React.FC = observer(() => {
                         </label>
                         <button
                           type="button"
-                          onClick={() => authStore.requestUnlockCode(loginEmail)}
+                          onClick={handleTroubleSigningIn}
                           className="text-xs text-primary hover:underline"
                         >
                           ¿Problemas de acceso?
@@ -297,6 +280,7 @@ export const LoginPage: React.FC = observer(() => {
                         <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                         <input
                           type={showPassword ? "text" : "password"}
+                          autoComplete="current-password"
                           value={loginPassword}
                           onChange={(e) => setLoginPassword(e.target.value)}
                           placeholder="••••••••"
@@ -341,15 +325,6 @@ export const LoginPage: React.FC = observer(() => {
                           Multi-tenant aislado
                         </span>
                         <span>API OpenAPI 2026 Compliant</span>
-                      </div>
-                      <div className="text-center pt-1">
-                        <button
-                          type="button"
-                          onClick={() => navigate(RoutePaths.MixziDashboard)}
-                          className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 transition"
-                        >
-                          ← Volver al Dashboard sin iniciar sesión
-                        </button>
                       </div>
                     </div>
                   </form>
@@ -429,6 +404,7 @@ export const LoginPage: React.FC = observer(() => {
                           <label className="text-xs font-semibold text-foreground block mb-1">Contraseña (Mín. 8 caracteres)</label>
                           <input
                             type="password"
+                            autoComplete="new-password"
                             value={regPassword}
                             onChange={(e) => setRegPassword(e.target.value)}
                             placeholder="Mínimo 8 caracteres"

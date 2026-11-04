@@ -17,6 +17,7 @@ type LazyRoutes = RouteObject & {
     name: string;
     sidebarIcon?: React.JSX.Element;
     label?: string;
+    requiresAuth?: boolean;
 };
 
 export const RoutePaths = {
@@ -36,6 +37,7 @@ export const routes: LazyRoutes[] = [
         name: "Dashboard",
         label: "Inicio",
         sidebarIcon: <Gauge aria-hidden="true" />,
+        requiresAuth: true,
     },
     {
         path: RoutePaths.MixziStock,
@@ -43,6 +45,7 @@ export const routes: LazyRoutes[] = [
         name: "Stock",
         label: "Stock",
         sidebarIcon: <Package aria-hidden="true" />,
+        requiresAuth: true,
     },
     {
         path: RoutePaths.MixziProfile,
@@ -50,6 +53,7 @@ export const routes: LazyRoutes[] = [
         name: "Perfil",
         label: "Perfil",
         sidebarIcon: <User aria-hidden="true" />,
+        requiresAuth: true,
     },
     {
         path: RoutePaths.MixziLogin,

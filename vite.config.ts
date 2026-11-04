@@ -19,6 +19,19 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       port: 3001,
+      // El navegador llama a rutas same-origin y Vite reenvía al backend, evitando CORS en local.
+      proxy: {
+        "/mixzi-api": {
+          target: env.MIXZI_API_PROXY_TARGET ?? "https://mixzi-api-dev.granile.dev",
+          changeOrigin: true,
+          rewrite: (p) => p.replace(/^\/mixzi-api/, ""),
+        },
+        "/mixzi-auth": {
+          target: env.MIXZI_AUTH_PROXY_TARGET ?? "https://mixzi-auth-dev.granile.dev",
+          changeOrigin: true,
+          rewrite: (p) => p.replace(/^\/mixzi-auth/, ""),
+        },
+      },
     },
     resolve: {
       alias: {

@@ -100,7 +100,7 @@ export default class ApiService {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout);
-      const request: Promise<Response> = fetch(url, {
+      const request: Promise<Response> = this.authStore.authorizedFetch(url, {
         headers: {
           ...customHeaders,
           ...((APP_MODE === "dev") ? { "Content-Type": "application/json" } : undefined),
@@ -132,7 +132,7 @@ export default class ApiService {
       this.authStore.onSuccessfulRequest();
       return response;
     } else {
-      this.authStore.onUnsuccessfulRequest(requestStats);
+      this.authStore.onUnsuccessfulRequest();
       throw response;
     }
   }

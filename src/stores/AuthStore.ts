@@ -1,8 +1,7 @@
-import { action, makeObservable, observable } from "mobx";
-import ApiService from "../api/ApiService";
+import { makeAutoObservable } from "mobx";
 import { AuthApi } from "@/_generated/apis/AuthApi";
-import { Configuration as ApiConfig } from "@/_generated/runtime";
-import { MIXZI_API_BASE } from "@/config/envVariables";
+import { Configuration as ApiConfig, FetchError } from "@/_generated/runtime";
+import { MIXZI_API_BASE, MIXZI_AUTH_BASE, MIXZI_AUTH_ANON_KEY } from "@/config/envVariables";
 
 export interface TenantPermissions {
   canManageStock: boolean;
@@ -16,12 +15,14 @@ export interface TenantPermissions {
   canExportReports: boolean;
 }
 
+export type UserRole = "owner" | "admin" | "head_chef" | "staff";
+
 export interface UserProfile {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
-  role: "owner" | "admin" | "head_chef" | "manager" | "staff";
+  role: UserRole;
   tenant: {
     id: string;
     name: string;
@@ -35,7 +36,14 @@ export interface UserProfile {
   permissions: TenantPermissions;
 }
 
-const DEFAULT_PERMISSIONS: Record<string, TenantPermissions> = {
+export interface RegistrationSession {
+  accessToken: string;
+  refreshToken: string;
+  userId: string;
+  email: string;
+}
+
+const ROLE_PERMISSIONS: Record<UserRole, TenantPermissions> = {
   owner: {
     canManageStock: true,
     canViewStock: true,
@@ -82,92 +90,78 @@ const DEFAULT_PERMISSIONS: Record<string, TenantPermissions> = {
   },
 };
 
-const DEFAULT_USER: UserProfile = {
-  id: "usr_01j789mixzi_chef",
-  email: "chef@mixzi.rest",
-  firstName: "Chef",
-  lastName: "Mixzi",
-  role: "owner",
-  tenant: {
-    id: "tnt_madrid_central_01",
-    name: "Mixzi Gastro Bar Madrid",
-    planId: "plan_enterprise_pro",
-    planName: "Plan Pro Restauración",
-    status: "active",
-    trialEndsAt: "2026-12-31",
-    address: "Calle Gran Vía 28, Madrid",
-    postalCode: "28013",
-  },
-  permissions: DEFAULT_PERMISSIONS.owner,
+const SESSION_STORAGE_KEY = "mixzi_auth_session";
+
+interface JwtClaims {
+  sub?: string;
+  tenant_id?: string;
+  user_role?: string;
+  app_metadata?: { role?: string };
+}
+
+interface UserMetadata {
+  firstName?: string;
+  lastName?: string;
+  first_name?: string;
+  last_name?: string;
+}
+
+const decodeJwtClaims = (token: string): JwtClaims => {
+  try {
+    const payload = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(atob(payload));
+  } catch {
+    return {};
+  }
 };
 
+interface SupabaseTokenResponse {
+  access_token: string;
+  refresh_token: string;
+  user?: { id: string; email?: string; user_metadata?: UserMetadata };
+}
+
+type TokenResult =
+  | { ok: true; data: SupabaseTokenResponse }
+  | { ok: false; status: number; message: string };
+
 export default class AuthStore {
-  isLoading: boolean = false;
-  apiStatusOk: boolean = false;
-  emailNotFoundError: boolean = false;
+  isLoading = false;
   errorMessage: string | null = null;
 
-  isAuthenticated: boolean = false;
+  isAuthenticated = false;
   accessToken: string | null = null;
   refreshToken: string | null = null;
   currentUser: UserProfile | null = null;
 
-  // Manejo de cuentas bloqueadas por exceso de intentos (ACCOUNT_LOCKED_VERIFY_EMAIL)
-  isAccountLocked: boolean = false;
-  lockedEmail: string = "";
+  // Cuenta bloqueada por intentos fallidos (ACCOUNT_LOCKED_VERIFY_EMAIL): flujo de desbloqueo por OTP.
+  isAccountLocked = false;
+  lockedEmail = "";
   otpSentMessage: string | null = null;
 
-  apiService?: ApiService;
-  authApi: AuthApi;
+  private authApi = new AuthApi(new ApiConfig({ basePath: MIXZI_API_BASE }));
+  private refreshInFlight: Promise<boolean> | null = null;
 
   constructor() {
-    this.authApi = new AuthApi(new ApiConfig({ basePath: MIXZI_API_BASE || "http://localhost:3000" }));
-
-    makeObservable(this, {
-      isLoading: observable,
-      apiStatusOk: observable,
-      emailNotFoundError: observable,
-      errorMessage: observable,
-      isAuthenticated: observable,
-      accessToken: observable,
-      currentUser: observable,
-      isAccountLocked: observable,
-      lockedEmail: observable,
-      otpSentMessage: observable,
-      setIsLoading: action,
-      setEmailNotFoundError: action,
-      setErrorMessage: action,
-      setSession: action,
-      logout: action,
-      setAccountLocked: action,
-      setOtpSentMessage: action,
-      clearAuthErrors: action,
-      switchRole: action,
-      updateTenantName: action,
+    makeAutoObservable<AuthStore, "authApi" | "refreshInFlight">(this, {
+      authApi: false,
+      refreshInFlight: false,
     });
-
     this.restoreSession();
-  }
-
-  init(apiService: ApiService) {
-    this.apiService = apiService;
   }
 
   setIsLoading = (value: boolean) => {
     this.isLoading = value;
   };
 
-  setEmailNotFoundError = (value: boolean) => {
-    this.emailNotFoundError = value;
-  };
-
   setErrorMessage = (message: string | null) => {
     this.errorMessage = message;
   };
 
-  setAccountLocked = (locked: boolean, email: string = "") => {
+  setAccountLocked = (locked: boolean, email = "") => {
     this.isAccountLocked = locked;
     this.lockedEmail = email;
+    this.otpSentMessage = null;
   };
 
   setOtpSentMessage = (msg: string | null) => {
@@ -176,12 +170,45 @@ export default class AuthStore {
 
   clearAuthErrors = () => {
     this.errorMessage = null;
-    this.emailNotFoundError = false;
   };
 
-  // Hooks invocados por ApiService en cada request. Manejo minimo de estado
-  // de carga global + logout automatico ante 401. Ajustar si el flujo de
-  // auth necesita otra logica (p.ej. refresh token) en vez de logout directo.
+  setSession = (accessToken: string, refreshToken: string, user: UserProfile) => {
+    this.accessToken = accessToken;
+    this.refreshToken = refreshToken;
+    this.currentUser = user;
+    this.isAuthenticated = true;
+    this.isAccountLocked = false;
+    this.errorMessage = null;
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ accessToken, refreshToken, user }));
+  };
+
+  updateTenantName = (name: string) => {
+    if (!this.currentUser || !this.accessToken) return;
+    this.setSession(this.accessToken, this.refreshToken ?? "", {
+      ...this.currentUser,
+      tenant: { ...this.currentUser.tenant, name },
+    });
+  };
+
+  logout = () => {
+    const token = this.accessToken;
+    this.isAuthenticated = false;
+    this.accessToken = null;
+    this.refreshToken = null;
+    this.currentUser = null;
+    this.isAccountLocked = false;
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+
+    // Revoca la sesión en el servidor; si falla, la sesión local ya está cerrada.
+    if (token) {
+      fetch(`${MIXZI_AUTH_BASE}/auth/v1/logout`, {
+        method: "POST",
+        headers: { apikey: MIXZI_AUTH_ANON_KEY ?? "", Authorization: `Bearer ${token}` },
+      }).catch(() => undefined);
+    }
+  };
+
+  // Hooks de ApiService: solo estado de carga global.
   onStartedRequest = async () => {
     this.setIsLoading(true);
   };
@@ -190,186 +217,125 @@ export default class AuthStore {
     this.setIsLoading(false);
   };
 
-  onUnsuccessfulRequest = (stats: RequestStatistics) => {
+  onUnsuccessfulRequest = () => {
     this.setIsLoading(false);
-    if (stats.responseCode === 401) {
-      this.logout();
-    }
-  };
-
-  private restoreSession() {
-    try {
-      const stored = localStorage.getItem("mixzi_auth_session");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        this.accessToken = parsed.accessToken || null;
-        this.refreshToken = parsed.refreshToken || null;
-        this.currentUser = parsed.user || DEFAULT_USER;
-        this.isAuthenticated = true;
-        return;
-      }
-    } catch (e) {
-      console.warn("Could not parse stored auth session", e);
-    }
-
-    // Por defecto en desarrollo para que la navegación siga activa
-    this.currentUser = DEFAULT_USER;
-    this.isAuthenticated = true;
-  }
-
-  setSession = (token: string, refreshToken: string, user: UserProfile) => {
-    this.accessToken = token;
-    this.refreshToken = refreshToken;
-    this.currentUser = user;
-    this.isAuthenticated = true;
-    this.isAccountLocked = false;
-    this.errorMessage = null;
-
-    localStorage.setItem(
-      "mixzi_auth_session",
-      JSON.stringify({
-        accessToken: token,
-        refreshToken,
-        user,
-      })
-    );
-  };
-
-  logout = () => {
-    this.isAuthenticated = false;
-    this.accessToken = null;
-    this.refreshToken = null;
-    this.currentUser = null;
-    localStorage.removeItem("mixzi_auth_session");
   };
 
   /**
-   * Intento de login normal. Si se detecta bloqueo de cuenta por 5 intentos, activa flujo de desbloqueo OTP.
+   * fetch autenticado: añade el Bearer y, ante un 401, renueva la sesión y reintenta una vez.
+   * Si no se puede renovar, cierra la sesión.
    */
+  authorizedFetch = async (input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> => {
+    const send = () => {
+      const headers = new Headers(init.headers);
+      if (this.accessToken) headers.set("Authorization", `Bearer ${this.accessToken}`);
+      return fetch(input, { ...init, headers });
+    };
+
+    const res = await send();
+    if (res.status !== 401 || !this.accessToken) return res;
+    if (!this.refreshToken) {
+      this.logout();
+      return res;
+    }
+    return (await this.refreshSession()) ? send() : res;
+  };
+
+  // Una sola renovación a la vez: los refresh tokens de Supabase son de un solo uso.
+  refreshSession = (): Promise<boolean> => {
+    this.refreshInFlight ??= this.doRefresh().finally(() => {
+      this.refreshInFlight = null;
+    });
+    return this.refreshInFlight;
+  };
+
+  private doRefresh = async (): Promise<boolean> => {
+    if (!this.refreshToken) return false;
+
+    const result = await this.requestTokens("refresh_token", { refresh_token: this.refreshToken });
+    if (!result.ok) {
+      // Solo se cierra sesión si el refresh token es inválido, no ante fallos de red o 5xx.
+      if (result.status >= 400 && result.status < 500) this.logout();
+      return false;
+    }
+
+    const { data } = result;
+    this.setSession(
+      data.access_token,
+      data.refresh_token,
+      this.buildUser(data.access_token, data.user, this.currentUser?.tenant)
+    );
+    return true;
+  };
+
   login = async (email: string, password: string): Promise<boolean> => {
     this.setIsLoading(true);
     this.clearAuthErrors();
 
-    try {
-      // Intentar login estándar a través de la API
-      if (this.apiService) {
-        try {
-          const res = await this.apiService.POST("/auth/login", { email, password });
-          if (res.ok) {
-            const data = await res.json();
-            const user: UserProfile = {
-              id: data.userId || "usr_" + Math.random().toString(36).substring(2, 9),
-              email,
-              firstName: data.firstName || "Usuario",
-              lastName: data.lastName || "Mixzi",
-              role: data.role || "owner",
-              tenant: data.tenant || DEFAULT_USER.tenant,
-              permissions: DEFAULT_PERMISSIONS[data.role || "owner"],
-            };
-            this.setSession(data.accessToken, data.refreshToken || "", user);
-            this.setIsLoading(false);
-            return true;
-          }
-        } catch {
-          // Continuar con fallback controlado
-        }
-      }
+    const result = await this.requestTokens("password", { email, password });
+    this.setIsLoading(false);
 
-      // Demo/Simulación controlada para frontend si no hay servidor local encendido
-      await new Promise((r) => setTimeout(r, 600));
-
-      // Ejemplo de credenciales demo
-      if (email.toLowerCase().includes("lock")) {
-        // Simular cuenta bloqueada para demostrar el endpoint /auth/verify-login-code
+    if (!result.ok) {
+      if (result.message.includes("ACCOUNT_LOCKED_VERIFY_EMAIL")) {
         this.setAccountLocked(true, email);
-        this.setErrorMessage("Cuenta temporalmente bloqueada por 5 intentos fallidos. Te hemos enviado un código de desbloqueo a tu email.");
-        this.setIsLoading(false);
-        return false;
+        await this.requestUnlockCode(email);
+      } else if (result.status === 429) {
+        this.setErrorMessage("Demasiados intentos. Inténtalo de nuevo en unos minutos.");
+      } else if (result.status === 0) {
+        this.setErrorMessage("No se pudo conectar con el servidor");
+      } else {
+        this.setErrorMessage("Email o contraseña incorrectos");
       }
-
-      const user: UserProfile = {
-        id: "usr_" + Math.random().toString(36).substring(2, 9),
-        email,
-        firstName: email.split("@")[0],
-        lastName: "Restauración",
-        role: "owner",
-        tenant: DEFAULT_USER.tenant,
-        permissions: DEFAULT_PERMISSIONS.owner,
-      };
-
-      this.setSession("jwt_mock_access_token_" + Date.now(), "jwt_mock_refresh_token", user);
-      this.setIsLoading(false);
-      return true;
-    } catch (err: any) {
-      this.setErrorMessage(err?.message || "Error al iniciar sesión");
-      this.setIsLoading(false);
       return false;
     }
+
+    const { data } = result;
+    this.setSession(data.access_token, data.refresh_token, this.buildUser(data.access_token, data.user, undefined, email));
+    return true;
   };
 
-  /**
-   * Endpoint /auth/verify-login-code: Envía el código OTP para desbloquear la cuenta
-   */
-  requestUnlockCode = async (email: string): Promise<boolean> => {
+  /** POST /auth/verify-login-code: envía el OTP de desbloqueo (responde 200 exista o no la cuenta). */
+  requestUnlockCode = async (email: string): Promise<void> => {
     this.setIsLoading(true);
-    this.errorMessage = null;
-
     try {
-      await this.authApi.authControllerVerifyLoginCode({
-        verifyLoginCodeDto: { email },
-      });
-      this.setOtpSentMessage(`Código de verificación enviado a ${email}. Revisa tu bandeja de entrada.`);
-      this.setIsLoading(false);
-      return true;
-    } catch {
-      // El endpoint en spec siempre responde 200 independientemente de si existe o no
-      this.setOtpSentMessage(`Código de verificación solicitado para ${email}.`);
-      this.setIsLoading(false);
-      return true;
+      await this.authApi.authControllerVerifyLoginCode({ verifyLoginCodeDto: { email } });
+    } catch (err) {
+      // El endpoint responde 200 exista o no la cuenta; solo un fallo de conexión es un error real.
+      if (err instanceof FetchError) {
+        this.setErrorMessage("No se pudo conectar con el servidor. Inténtalo de nuevo más tarde.");
+        this.setIsLoading(false);
+        return;
+      }
     }
+    this.clearAuthErrors();
+    this.setOtpSentMessage(`Si la cuenta existe, hemos enviado un código a ${email}.`);
+    this.setIsLoading(false);
   };
 
-  /**
-   * Endpoint /auth/confirm-login-code: Valida el código OTP y devuelve sesión desbloqueada
-   */
+  /** POST /auth/confirm-login-code: valida el OTP y devuelve una sesión completa. */
   confirmUnlockCode = async (email: string, code: string): Promise<boolean> => {
     this.setIsLoading(true);
-    this.errorMessage = null;
+    this.clearAuthErrors();
 
     try {
-      const response = await this.authApi.authControllerConfirmLoginCode({
+      const res = await this.authApi.authControllerConfirmLoginCode({
         confirmLoginCodeDto: { email, code },
       });
-
-      if (response && response.accessToken) {
-        const user: UserProfile = {
-          id: response.userId,
-          email: response.email,
-          firstName: "Usuario Desbloqueado",
-          lastName: "Mixzi",
-          role: "owner",
-          tenant: DEFAULT_USER.tenant,
-          permissions: DEFAULT_PERMISSIONS.owner,
-        };
-        this.setSession(response.accessToken, response.refreshToken, user);
-        this.setIsLoading(false);
-        return true;
-      }
-
-      // Fallback si devuelve datos
-      this.setSession("unlocked_token_" + Date.now(), "unlocked_refresh", DEFAULT_USER);
-      this.setIsLoading(false);
+      this.setSession(
+        res.accessToken,
+        res.refreshToken,
+        this.buildUser(res.accessToken, { id: res.userId, email: res.email })
+      );
       return true;
-    } catch (err: any) {
-      this.setErrorMessage(err?.message || "Código incorrecto o caducado. Vuelve a intentarlo.");
-      this.setIsLoading(false);
+    } catch {
+      this.setErrorMessage("Código incorrecto o caducado. Vuelve a intentarlo.");
       return false;
+    } finally {
+      this.setIsLoading(false);
     }
   };
 
-  /**
-   * Paso 1 de registro: /auth/register
-   */
+  /** Paso 1 de registro (POST /auth/register). No abre sesión: el usuario aún no tiene tenant. */
   registerStep1 = async (payload: {
     firstName: string;
     lastName: string;
@@ -377,122 +343,136 @@ export default class AuthStore {
     password: string;
     termsAccepted: boolean;
     termsVersion: string;
-  }): Promise<{ success: boolean; token?: string; error?: string }> => {
+  }): Promise<RegistrationSession | null> => {
     this.setIsLoading(true);
-    this.errorMessage = null;
+    this.clearAuthErrors();
 
     try {
-      const res = await this.authApi.authControllerRegister({
-        registerDto: payload,
-      });
-
+      const res = await this.authApi.authControllerRegister({ registerDto: payload });
+      return { accessToken: res.accessToken, refreshToken: res.refreshToken, userId: res.userId, email: res.email };
+    } catch {
+      this.setErrorMessage("No se pudo crear la cuenta. Revisa los datos o prueba con otro correo.");
+      return null;
+    } finally {
       this.setIsLoading(false);
-      return { success: true, token: res.accessToken };
-    } catch (err: any) {
-      // Simular continuación si la API no está alcanzable en local
-      this.setIsLoading(false);
-      return { success: true, token: "temp_signup_token_" + Date.now() };
     }
   };
 
   /**
-   * Paso 2 de registro: /auth/complete-registration
+   * Paso 2 de registro (POST /auth/complete-registration). El token usado no lleva tenant_id,
+   * así que tras crear el tenant se renueva con el refresh token para obtener uno nuevo con el claim.
    */
   completeRegistrationStep2 = async (
-    token: string,
-    payload: {
-      restaurantName: string;
-      address?: string;
-      postalCode?: string;
-      planId: string;
-    }
+    session: RegistrationSession,
+    payload: { restaurantName: string; address?: string; postalCode?: string; planId: string }
   ): Promise<boolean> => {
     this.setIsLoading(true);
+    this.clearAuthErrors();
+
     try {
       const authApiWithToken = new AuthApi(
-        new ApiConfig({
-          basePath: MIXZI_API_BASE || "http://localhost:3000",
-          accessToken: token,
-        })
+        new ApiConfig({ basePath: MIXZI_API_BASE, accessToken: session.accessToken })
       );
-
-      const res = await authApiWithToken.authControllerCompleteRegistration({
+      const { tenantId } = await authApiWithToken.authControllerCompleteRegistration({
         completeRegistrationDto: payload,
       });
 
-      const user: UserProfile = {
-        id: "usr_" + Math.random().toString(36).substring(2, 9),
-        email: "nuevo@restaurante.com",
-        firstName: payload.restaurantName,
-        lastName: "Admin",
-        role: "owner",
-        tenant: {
-          id: res.tenantId || "tnt_" + Math.random().toString(36).substring(2, 9),
-          name: payload.restaurantName,
-          planId: payload.planId,
-          planName: payload.planId === "plan_enterprise_pro" ? "Plan Pro Restauración" : "Plan Starter",
-          status: "trial",
-          trialEndsAt: "2026-10-31",
-          address: payload.address,
-          postalCode: payload.postalCode,
-        },
-        permissions: DEFAULT_PERMISSIONS.owner,
-      };
+      const result = await this.requestTokens("refresh_token", { refresh_token: session.refreshToken });
+      if (!result.ok) throw new Error(result.message);
 
-      this.setSession(token, "refresh_token", user);
-      this.setIsLoading(false);
+      const { data } = result;
+      this.setSession(
+        data.access_token,
+        data.refresh_token,
+        this.buildUser(
+          data.access_token,
+          data.user ?? { id: session.userId, email: session.email },
+          {
+            id: tenantId,
+            name: payload.restaurantName,
+            planId: payload.planId,
+            planName: payload.planId === "plan_enterprise_pro" ? "Plan Pro Restauración" : "Plan Starter",
+            status: "trial",
+            address: payload.address,
+            postalCode: payload.postalCode,
+          }
+        )
+      );
       return true;
     } catch {
-      // Fallback
-      const user: UserProfile = {
-        id: "usr_" + Math.random().toString(36).substring(2, 9),
-        email: "nuevo@restaurante.com",
-        firstName: payload.restaurantName,
-        lastName: "Admin",
-        role: "owner",
-        tenant: {
-          id: "tnt_" + Math.random().toString(36).substring(2, 9),
-          name: payload.restaurantName,
-          planId: payload.planId,
-          planName: "Plan Pro Restauración",
-          status: "trial",
-          trialEndsAt: "2026-10-31",
-          address: payload.address,
-          postalCode: payload.postalCode,
-        },
-        permissions: DEFAULT_PERMISSIONS.owner,
-      };
-      this.setSession(token, "refresh_token", user);
+      this.setErrorMessage("No se pudo crear el restaurante. Inténtalo de nuevo.");
+      return false;
+    } finally {
       this.setIsLoading(false);
-      return true;
     }
   };
 
-  switchRole = (role: "owner" | "admin" | "head_chef" | "staff") => {
-    if (!this.currentUser) return;
-    this.currentUser = {
-      ...this.currentUser,
+  private restoreSession() {
+    try {
+      const stored = localStorage.getItem(SESSION_STORAGE_KEY);
+      if (!stored) return;
+      const { accessToken, refreshToken, user } = JSON.parse(stored);
+      if (!accessToken || !user) return;
+      this.accessToken = accessToken;
+      this.refreshToken = refreshToken || null;
+      this.currentUser = user;
+      this.isAuthenticated = true;
+    } catch {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+    }
+  }
+
+  private requestTokens = async (
+    grantType: "password" | "refresh_token",
+    body: Record<string, string>
+  ): Promise<TokenResult> => {
+    try {
+      const res = await fetch(`${MIXZI_AUTH_BASE}/auth/v1/token?grant_type=${grantType}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: MIXZI_AUTH_ANON_KEY ?? "" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return {
+          ok: false,
+          status: res.status,
+          message: String(data?.msg || data?.error_description || data?.message || ""),
+        };
+      }
+      return { ok: true, data };
+    } catch {
+      return { ok: false, status: 0, message: "network_error" };
+    }
+  };
+
+  // El rol y el tenant_id vienen en el JWT; nombre y plan del tenant no, por eso se conservan del estado previo.
+  private buildUser(
+    accessToken: string,
+    supabaseUser?: SupabaseTokenResponse["user"],
+    tenant?: UserProfile["tenant"],
+    fallbackEmail = ""
+  ): UserProfile {
+    const claims = decodeJwtClaims(accessToken);
+    const claimRole = claims.user_role ?? claims.app_metadata?.role;
+    const role: UserRole = claimRole && claimRole in ROLE_PERMISSIONS ? (claimRole as UserRole) : "staff";
+    const meta = supabaseUser?.user_metadata ?? {};
+    const tenantId = claims.tenant_id ?? tenant?.id ?? "";
+    const resolvedTenant =
+      tenant && tenant.id === tenantId
+        ? tenant
+        : { id: tenantId, name: "", planId: "", planName: "", status: "active" as const };
+
+    return {
+      id: supabaseUser?.id ?? claims.sub ?? "",
+      email: supabaseUser?.email ?? fallbackEmail,
+      firstName: meta.firstName ?? meta.first_name ?? this.currentUser?.firstName ?? "",
+      lastName: meta.lastName ?? meta.last_name ?? this.currentUser?.lastName ?? "",
       role,
-      permissions: DEFAULT_PERMISSIONS[role] || DEFAULT_PERMISSIONS.staff,
+      tenant: resolvedTenant,
+      permissions: ROLE_PERMISSIONS[role],
     };
-    if (this.accessToken && this.refreshToken) {
-      this.setSession(this.accessToken, this.refreshToken, this.currentUser);
-    }
-  };
-
-  updateTenantName = (name: string) => {
-    if (!this.currentUser) return;
-    this.currentUser = {
-      ...this.currentUser,
-      tenant: {
-        ...this.currentUser.tenant,
-        name,
-      },
-    };
-    if (this.accessToken && this.refreshToken) {
-      this.setSession(this.accessToken, this.refreshToken, this.currentUser);
-    }
-  };
+  }
 }
 
 export const authStore = new AuthStore();
