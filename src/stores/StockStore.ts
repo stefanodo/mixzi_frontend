@@ -1,6 +1,6 @@
 import type { StockLotResponseDto, StockLotsApi } from "@/_generated";
 import { MOCKED_STOCK_LOT_REFERENCES } from "@/mocks/stockMocks";
-import { makeObservable, observable, runInAction } from "mobx";
+import { action, makeObservable, observable, runInAction } from "mobx";
 
 export default class StockStore {
     stockLotReferences: StockLotResponseDto[] = [];
@@ -15,6 +15,9 @@ export default class StockStore {
             stockLotsApi: observable,
             fetchingStockLots: observable,
             stockLotsError: observable,
+            init: action,
+            setFetchingStockLots: action,
+            setStockLotsError: action,
         })
 
         runInAction(() => {

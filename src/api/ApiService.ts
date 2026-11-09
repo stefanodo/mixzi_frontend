@@ -2,7 +2,7 @@ import AuthStore from "@/stores/AuthStore";
 
 import HttpRequestTypes, { type HttpRequestType } from "./types/HttpRequestType";
 import RequestUtil from "@/utils/RequestUtil";
-import { APP_MODE, MIXZI_API_BASE } from "@/config/envVariables";
+import { MIXZI_API_BASE } from "@/config/envVariables";
 
 export interface FetchRejectionResult {
   ok: false;
@@ -67,12 +67,8 @@ export default class ApiService {
     timeout = 100000,
     additionalRequestConfig?: Partial<Request>
   ): Promise<Response> {
-    await this.authStore.onStartedRequest();
-
-    let url = this._getApiBase();
-    if (path.match(/(http:\/\/.+)|(https:\/\/)/)) {
-      url = path;
-    }
+    const isAbsoluteUrl = /^https?:\/\//i.test(path);
+    let url = isAbsoluteUrl ? path : `${this._getApiBase().replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
     const requestStats: RequestStatistics = {
       success: false,
       firedAt: Date.now(),
@@ -85,6 +81,9 @@ export default class ApiService {
         const val = headers[header];
         if (val) customHeaders[header] = val;
       }
+    if (!isAbsoluteUrl) {
+      customHeaders.Authorization = `Bearer ${await this.authStore.getValidAccessToken()}`;
+    }
 
     let encodedBody: string | undefined;
     if (method === HttpRequestTypes.GET) {
@@ -94,6 +93,8 @@ export default class ApiService {
       encodedBody = body instanceof Object ? JSON.stringify(body) : undefined;
     } else if (typeof body !== "string") {
       encodedBody = JSON.stringify(body);
+    } else {
+      encodedBody = body;
     }
 
     let response: Response;
@@ -102,9 +103,8 @@ export default class ApiService {
       const timeoutId = setTimeout(() => controller.abort(), timeout);
       const request: Promise<Response> = fetch(url, {
         headers: {
+          ...(encodedBody !== undefined ? { "Content-Type": "application/json" } : undefined),
           ...customHeaders,
-          ...((APP_MODE === "dev") ? { "Content-Type": "application/json" } : undefined),
-          
         },
         method,
         body: encodedBody,
@@ -129,10 +129,8 @@ export default class ApiService {
     requestStats.responseCode = response.status;
     requestStats.durationMs = Date.now() - requestStats.firedAt;
     if (response?.ok) {
-      this.authStore.onSuccessfulRequest();
       return response;
     } else {
-      this.authStore.onUnsuccessfulRequest(requestStats);
       throw response;
     }
   }

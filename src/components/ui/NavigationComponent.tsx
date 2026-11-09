@@ -1,5 +1,5 @@
 import { Gauge, Heart, Moon, Package, Sun, User, LogIn, LogOut, ShieldCheck, ChevronDown, Building2 } from "lucide-react"
-import { type KeyboardEvent, type PointerEvent, useEffect, useRef, useState } from "react"
+import { type PointerEvent, useEffect, useRef, useState } from "react"
 import { matchPath, NavLink, useLocation, useNavigate } from "react-router-dom"
 import { observer } from "mobx-react-lite"
 import { RoutePaths } from "../../router/routes"
@@ -8,15 +8,6 @@ import { useTheme } from "./ThemeProvider"
 import mixziLogo from "../../assets/mixi logo.svg"
 import { authStore } from "../../stores/AuthStore"
 
-const handleKeyboardActivation = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.key !== "Enter" && event.key !== " ") {
-        return
-    }
-
-    event.preventDefault()
-    event.currentTarget.click()
-}
-
 export const NavigationComponent = observer(() => {
     const location = useLocation()
     const navigate = useNavigate()
@@ -24,13 +15,14 @@ export const NavigationComponent = observer(() => {
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
     const [isDragging, setIsDragging] = useState(false)
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
-    const [hasDragged, setHasDragged] = useState(false)
     const dragThreshold = 5
     const isInteractingRef = useRef(false)
+    const hasDraggedRef = useRef(false)
 
     // Estado del desplegable de perfil
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
     const userMenuRef = useRef<HTMLDivElement>(null)
+    const userMenuButtonRef = useRef<HTMLButtonElement>(null)
 
     const isStockActive = location.pathname.startsWith(RoutePaths.MixziStock)
     const isDashboardActive = location.pathname.startsWith(RoutePaths.MixziDashboard) || location.pathname === "/"
@@ -44,15 +36,14 @@ export const NavigationComponent = observer(() => {
     const resetDrag = () => {
         setDragOffset({ x: 0, y: 0 })
         setIsDragging(false)
-        setHasDragged(false)
         isInteractingRef.current = false
     }
 
-    const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
         if (event.button !== 0) return
         isInteractingRef.current = true
         setIsDragging(true)
-        setHasDragged(false)
+        hasDraggedRef.current = false
         setDragStart({
             x: event.clientX - dragOffset.x,
             y: event.clientY - dragOffset.y,
@@ -60,12 +51,12 @@ export const NavigationComponent = observer(() => {
         event.currentTarget.setPointerCapture?.(event.pointerId)
     }
 
-    const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    const handlePointerMove = (event: PointerEvent<HTMLButtonElement>) => {
         if (!isInteractingRef.current) return
         const nextX = event.clientX - dragStart.x
         const nextY = event.clientY - dragStart.y
-        if (!hasDragged && Math.hypot(nextX, nextY) > dragThreshold) {
-            setHasDragged(true)
+        if (Math.hypot(nextX, nextY) > dragThreshold) {
+            hasDraggedRef.current = true
         }
         setDragOffset({
             x: Math.max(-56, Math.min(56, nextX)),
@@ -73,12 +64,15 @@ export const NavigationComponent = observer(() => {
         })
     }
 
-    const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    const handlePointerUp = (event: PointerEvent<HTMLButtonElement>) => {
         if (!isInteractingRef.current) return
         try {
-            event.currentTarget.releasePointerCapture?.(event.pointerId)
-        } catch {}
-        resetDrag()
+            if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+                event.currentTarget.releasePointerCapture(event.pointerId)
+            }
+        } finally {
+            resetDrag()
+        }
     }
 
     // Cerrar menú de usuario al hacer clic/tocar fuera o presionar Escape
@@ -92,6 +86,7 @@ export const NavigationComponent = observer(() => {
         const handleEscape = (event: globalThis.KeyboardEvent) => {
             if (event.key === "Escape") {
                 setIsUserMenuOpen(false)
+                userMenuButtonRef.current?.focus()
             }
         }
 
@@ -180,32 +175,31 @@ export const NavigationComponent = observer(() => {
                         </span>
                     </div>
 
-                    <div
-                        role="button"
-                        tabIndex={0}
-                        aria-label="Mixzi logo (arrastrable para descubrir easter egg)"
-                        onKeyDown={handleKeyboardActivation}
+                    <button
+                        type="button"
+                        aria-label="Ir al inicio de Mixzi"
                         onPointerDown={handlePointerDown}
                         onPointerMove={handlePointerMove}
                         onPointerUp={handlePointerUp}
                         onPointerCancel={resetDrag}
                         onClick={() => {
-                            if (!hasDragged) {
+                            if (!hasDraggedRef.current) {
                                 navigate(RoutePaths.MixziDashboard)
                             }
+                            hasDraggedRef.current = false
                         }}
                         style={{
                             transform: `translate3d(${dragOffset.x}px, ${dragOffset.y}px, 0)`,
                             transition: isDragging ? "none" : "transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1)",
                         }}
-                        className="relative z-10 flex items-center select-none cursor-grab active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md p-1"
+                        className="relative z-10 flex min-h-12 min-w-12 items-center justify-center select-none cursor-grab active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary rounded-md p-1"
                     >
                         <img
                             src={mixziLogo}
                             alt="Mixzi"
                             className="h-7 w-auto pointer-events-none drop-shadow-sm"
                         />
-                    </div>
+                    </button>
                 </div>
 
                 {/* Central Desktop Operational Navigation */}
@@ -256,7 +250,7 @@ export const NavigationComponent = observer(() => {
                         type="button"
                         onClick={toggleTheme}
                         aria-label={isThemeDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/80 bg-card text-foreground transition-all hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-border/80 bg-card text-foreground transition-all hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                         title={isThemeDark ? "Modo Claro" : "Modo Oscuro"}
                     >
                         {isThemeDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -283,11 +277,13 @@ export const NavigationComponent = observer(() => {
                         <div className="relative" ref={userMenuRef}>
                             <button
                                 type="button"
+                                ref={userMenuButtonRef}
                                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                                 aria-expanded={isUserMenuOpen}
-                                aria-haspopup="true"
+                                aria-controls="user-account-menu"
+                                aria-label="Menú de usuario y cuenta"
                                 className={cn(
-                                    "flex items-center gap-2 rounded-full border p-1 pr-2.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                                    "flex min-h-12 min-w-12 items-center gap-2 rounded-full border p-1 pr-2.5 transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
                                     isUserMenuOpen || isProfileActive
                                         ? "border-primary/60 bg-primary/10 text-primary shadow-xs"
                                         : "border-border/80 bg-card text-foreground hover:bg-muted/60 hover:border-border"
@@ -298,7 +294,7 @@ export const NavigationComponent = observer(() => {
                                     {userInitials}
                                     <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-background" />
                                 </div>
-                                <span className="hidden sm:inline-block max-w-[110px] truncate text-xs font-medium">
+                                <span className="hidden sm:inline-block max-w-27.5 truncate text-xs font-medium">
                                     {authStore.currentUser?.firstName || "Mi Cuenta"}
                                 </span>
                                 <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform duration-200", isUserMenuOpen && "rotate-180")} />
@@ -317,8 +313,7 @@ export const NavigationComponent = observer(() => {
                             {isUserMenuOpen && (
                                 <div
                                     className="absolute right-0 mt-2 w-72 rounded-2xl border border-border/80 bg-card/98 p-2.5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-150 z-50 text-foreground"
-                                    role="menu"
-                                    aria-orientation="vertical"
+                                    id="user-account-menu"
                                 >
                                     {/* Cabecera de usuario */}
                                     <div className="px-3 py-2.5 border-b border-border/60">
@@ -331,7 +326,7 @@ export const NavigationComponent = observer(() => {
                                         <div className="flex items-center gap-1.5 mt-2">
                                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-medium border border-primary/20">
                                                 <ShieldCheck className="h-3 w-3" />
-                                                Rol: {authStore.currentUser?.role || "Staff"}
+                                                Rol: {authStore.currentUser?.role || "no disponible"}
                                             </span>
                                             {authStore.currentUser?.tenant?.name && (
                                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-medium truncate">
@@ -350,8 +345,7 @@ export const NavigationComponent = observer(() => {
                                                 setIsUserMenuOpen(false)
                                                 navigate(RoutePaths.MixziProfile)
                                             }}
-                                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-foreground hover:bg-muted/80 transition-colors text-left"
-                                            role="menuitem"
+                                            className="w-full min-h-12 flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-foreground hover:bg-muted/80 transition-colors text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                                         >
                                             <User className="h-4 w-4 text-muted-foreground" />
                                             <span>Mi Perfil & Permisos Tenant</span>
@@ -365,8 +359,7 @@ export const NavigationComponent = observer(() => {
                                         <button
                                             type="button"
                                             onClick={handleLogout}
-                                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors text-left"
-                                            role="menuitem"
+                                            className="w-full min-h-12 flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destructive"
                                         >
                                             <LogOut className="h-4 w-4" />
                                             <span>Cerrar Sesión</span>

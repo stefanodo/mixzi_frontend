@@ -1,5 +1,28 @@
 # React + TypeScript + Vite
 
+## Autenticación
+
+Configura `VITE_MIXZI_API_BASE` con la URL raíz de la API NestJS,
+`VITE_MIXZI_AUTH_BASE` con la URL raíz de Supabase Auth/Kong y
+`VITE_MIXZI_AUTH_ANON_KEY` con la clave **anon pública** del mismo proyecto.
+Por ejemplo, la API de desarrollo utiliza `https://mixzi-api-dev.granile.dev`.
+Usa `.env.dev` para desarrollo local o las variables de compilación de Docker;
+las variables `VITE_*` se incluyen en el navegador, así que nunca pongas una
+clave `service_role` ni otros secretos en ellas.
+
+El acceso se realiza contra Supabase Auth; el registro y `/auth/me` usan la API.
+La sesión se guarda en `localStorage` y se renueva antes de que expire. Tras
+crear el restaurante se solicita un token nuevo para obtener `tenant_id`.
+El rol, nombre y plan del restaurante proceden de `/auth/me`, no del JWT.
+La API todavía no ofrece un catálogo de planes: para completar el registro
+hay que obtener del backend el UUID de un plan existente.
+El registro envía la versión `v1` de los términos, pero el texto o enlace
+oficial aún debe facilitarlo Mixzi antes de recoger consentimiento válido.
+El cierre de sesión elimina la sesión local; no revoca los tokens en Supabase.
+
+Las pruebas aisladas de autenticación se ejecutan con `npm run test:auth`.
+Simulan las respuestas de los servicios y no crean cuentas ni restaurantes reales.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

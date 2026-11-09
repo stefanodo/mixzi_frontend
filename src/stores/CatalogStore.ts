@@ -1,6 +1,6 @@
-import type { CatalogApi, ItemResponseDto, StockLotsApi } from "@/_generated";
+import type { CatalogApi, ItemResponseDto } from "@/_generated";
 import { MOCKED_CATALOG_REFERENCES } from "@/mocks/catalogMocks";
-import { makeObservable, observable, runInAction } from "mobx";
+import { action, makeObservable, observable, runInAction } from "mobx";
 
 export default class CatalogStore {
     catalogReferences: ItemResponseDto[] = [];
@@ -15,6 +15,9 @@ export default class CatalogStore {
             catalogApi: observable,
             fetchingCatalog: observable,
             catalogError: observable,
+            init: action,
+            setFetchingCatalog: action,
+            setCatalogError: action,
         })
 
         runInAction(() => {

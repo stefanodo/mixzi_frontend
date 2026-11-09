@@ -3,5 +3,5 @@ interface RequestStatistics {
     responseCode?: number
     durationMs?: number
     firedAt: number
-    executionCount: Number
+    executionCount: number
 }

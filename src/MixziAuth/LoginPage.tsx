@@ -10,12 +10,8 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
-  Sparkles,
   KeyRound,
-  FileCheck,
   ChevronRight,
-  Layers,
-  ChefHat,
   X
 } from "lucide-react";
 import { authStore } from "@/stores/AuthStore";
@@ -37,13 +33,14 @@ export const LoginPage: React.FC = observer(() => {
   }, [navigate]);
 
   // Estados de vista
-  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
-  const [registerStep, setRegisterStep] = useState<1 | 2>(1);
+  const hasUnassignedSession = authStore.isAuthenticated && !authStore.currentUser?.tenant;
+  const [activeTab, setActiveTab] = useState<"login" | "register">(hasUnassignedSession ? "register" : "login");
+  const registerStep = hasUnassignedSession && authStore.profileLoaded ? 2 : 1;
   const [showPassword, setShowPassword] = useState(false);
 
   // Formulario Login
-  const [loginEmail, setLoginEmail] = useState("chef@mixzi.rest");
-  const [loginPassword, setLoginPassword] = useState("Restaurante2026!");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
 
   // Formulario Registro Paso 1
   const [regFirstName, setRegFirstName] = useState("");
@@ -51,13 +48,12 @@ export const LoginPage: React.FC = observer(() => {
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [step1Token, setStep1Token] = useState("");
 
   // Formulario Registro Paso 2 (Tenant y Plan)
   const [restaurantName, setRestaurantName] = useState("");
   const [restaurantAddress, setRestaurantAddress] = useState("");
   const [restaurantPostalCode, setRestaurantPostalCode] = useState("");
-  const [selectedPlanId, setSelectedPlanId] = useState("plan_enterprise_pro");
+  const [selectedPlanId, setSelectedPlanId] = useState("");
 
   // Desbloqueo de cuenta OTP
   const [otpCode, setOtpCode] = useState("");
@@ -66,7 +62,11 @@ export const LoginPage: React.FC = observer(() => {
     e.preventDefault();
     const ok = await authStore.login(loginEmail, loginPassword);
     if (ok) {
-      navigate(RoutePaths.MixziDashboard);
+      if (authStore.currentUser?.tenant) {
+        navigate(RoutePaths.MixziDashboard);
+      } else {
+        setActiveTab("register");
+      }
     }
   };
 
@@ -83,13 +83,10 @@ export const LoginPage: React.FC = observer(() => {
       email: regEmail,
       password: regPassword,
       termsAccepted: true,
-      termsVersion: "1.0",
+      termsVersion: "v1",
     });
 
-    if (res.success && res.token) {
-      setStep1Token(res.token);
-      setRegisterStep(2);
-    }
+    if (res.success && res.token) setActiveTab("register");
   };
 
   const handleRegisterStep2 = async (e: React.FormEvent) => {
@@ -99,15 +96,17 @@ export const LoginPage: React.FC = observer(() => {
       return;
     }
 
-    const ok = await authStore.completeRegistrationStep2(step1Token, {
-      restaurantName,
-      address: restaurantAddress,
-      postalCode: restaurantPostalCode,
-      planId: selectedPlanId,
+    const ok = await authStore.completeRegistrationStep2({
+      restaurantName: restaurantName.trim(),
+      address: restaurantAddress.trim() || undefined,
+      postalCode: restaurantPostalCode.trim() || undefined,
+      planId: selectedPlanId.trim(),
     });
 
     if (ok) {
       navigate(RoutePaths.MixziDashboard);
+    } else if (!authStore.isAuthenticated) {
+      setActiveTab("login");
     }
   };
 
@@ -115,7 +114,11 @@ export const LoginPage: React.FC = observer(() => {
     e.preventDefault();
     const ok = await authStore.confirmUnlockCode(authStore.lockedEmail || loginEmail, otpCode);
     if (ok) {
-      navigate(RoutePaths.MixziDashboard);
+      if (authStore.currentUser?.tenant) {
+        navigate(RoutePaths.MixziDashboard);
+      } else {
+        setActiveTab("register");
+      }
     }
   };
 
@@ -124,7 +127,7 @@ export const LoginPage: React.FC = observer(() => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/40 to-background flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-linear-to-br from-background via-muted/40 to-background flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-xl">
         {/* Cabecera de la Marca */}
         <div className="text-center mb-8">
@@ -132,7 +135,7 @@ export const LoginPage: React.FC = observer(() => {
               <img
                   src={mixziLogo}
                   alt="Mixzi"
-                  className="h-8 w-auto max-w-[124px] object-contain select-none pointer-events-none drop-shadow-sm"
+                  className="h-8 w-auto max-w-31 object-contain select-none pointer-events-none drop-shadow-sm"
                   draggable={false}
               />
           </div>
@@ -164,7 +167,7 @@ export const LoginPage: React.FC = observer(() => {
                 <div>
                   <h3 className="text-sm font-semibold">Cuenta protegida por seguridad</h3>
                   <p className="text-xs mt-0.5 opacity-90">
-                    5 intentos fallidos consecutivos detectados (código GoTrue). Introduce el código OTP de desbloqueo enviado a tu correo.
+                    Solicita un código para verificar tu correo y desbloquear la cuenta.
                   </p>
                 </div>
               </div>
@@ -177,12 +180,13 @@ export const LoginPage: React.FC = observer(() => {
 
               <form onSubmit={handleConfirmOtp} className="space-y-4">
                 <div>
-                  <label className="text-xs font-semibold text-foreground uppercase tracking-wider block mb-1.5">
-                    Código de Desbloqueo (POST /auth/confirm-login-code)
+                  <label htmlFor="unlock-code" className="text-xs font-semibold text-foreground uppercase tracking-wider block mb-1.5">
+                    Código de desbloqueo
                   </label>
                   <div className="relative">
                     <KeyRound className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input
+                      id="unlock-code"
                       type="text"
                       value={otpCode}
                       onChange={(e) => setOtpCode(e.target.value)}
@@ -194,7 +198,7 @@ export const LoginPage: React.FC = observer(() => {
                 </div>
 
                 {authStore.errorMessage && (
-                  <p className="text-xs text-destructive font-medium">{authStore.errorMessage}</p>
+                  <p role="alert" className="text-xs text-destructive font-medium">{authStore.errorMessage}</p>
                 )}
 
                 <button
@@ -209,13 +213,18 @@ export const LoginPage: React.FC = observer(() => {
                   <button
                     type="button"
                     onClick={handleResendOtp}
+                    disabled={authStore.isLoading}
                     className="text-primary hover:underline"
                   >
-                    Reenviar código de acceso
+                    {authStore.otpSentMessage ? "Reenviar código de acceso" : "Solicitar código de acceso"}
                   </button>
                   <button
                     type="button"
-                    onClick={() => authStore.setAccountLocked(false)}
+                    onClick={() => {
+                      authStore.setAccountLocked(false);
+                      authStore.clearAuthErrors();
+                      setOtpCode("");
+                    }}
                     className="text-muted-foreground hover:underline"
                   >
                     Volver al login
@@ -264,12 +273,13 @@ export const LoginPage: React.FC = observer(() => {
                   /* ================= FORMULARIO LOGIN ================= */
                   <form onSubmit={handleLoginSubmit} className="space-y-4">
                     <div>
-                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider block mb-1.5">
+                      <label htmlFor="login-email" className="text-xs font-semibold text-foreground uppercase tracking-wider block mb-1.5">
                         Correo Electrónico
                       </label>
                       <div className="relative">
                         <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                         <input
+                          id="login-email"
                           type="email"
                           value={loginEmail}
                           onChange={(e) => setLoginEmail(e.target.value)}
@@ -282,20 +292,22 @@ export const LoginPage: React.FC = observer(() => {
 
                     <div>
                       <div className="flex justify-between items-center mb-1.5">
-                        <label className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                        <label htmlFor="login-password" className="text-xs font-semibold text-foreground uppercase tracking-wider">
                           Contraseña
                         </label>
                         <button
                           type="button"
                           onClick={() => authStore.requestUnlockCode(loginEmail)}
+                          disabled={authStore.isLoading}
                           className="text-xs text-primary hover:underline"
                         >
-                          ¿Problemas de acceso?
+                          ¿Cuenta bloqueada? Solicitar código
                         </button>
                       </div>
                       <div className="relative">
                         <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                         <input
+                          id="login-password"
                           type={showPassword ? "text" : "password"}
                           value={loginPassword}
                           onChange={(e) => setLoginPassword(e.target.value)}
@@ -306,7 +318,8 @@ export const LoginPage: React.FC = observer(() => {
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                          className="absolute right-1 top-1/2 flex min-h-12 min-w-12 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                         >
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
@@ -314,7 +327,7 @@ export const LoginPage: React.FC = observer(() => {
                     </div>
 
                     {authStore.errorMessage && (
-                      <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs">
+                      <div role="alert" className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs">
                         {authStore.errorMessage}
                       </div>
                     )}
@@ -385,13 +398,23 @@ export const LoginPage: React.FC = observer(() => {
                       </div>
                     </div>
 
-                    {registerStep === 1 ? (
+                    {hasUnassignedSession && !authStore.profileLoaded ? (
+                      <div role="status" className="space-y-3">
+                        <p>{authStore.profileError ? "No se pudo comprobar el restaurante de tu cuenta." : "Comprobando tu cuenta..."}</p>
+                        {authStore.profileError && (
+                          <button type="button" className="min-h-12 rounded-xl bg-primary px-4 text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" onClick={() => void authStore.loadProfile()}>
+                            Reintentar
+                          </button>
+                        )}
+                      </div>
+                    ) : registerStep === 1 ? (
                       /* Paso 1: POST /auth/register */
                       <form onSubmit={handleRegisterStep1} className="space-y-4">
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="text-xs font-semibold text-foreground block mb-1">Nombre</label>
+                            <label htmlFor="register-first-name" className="text-xs font-semibold text-foreground block mb-1">Nombre</label>
                             <input
+                              id="register-first-name"
                               type="text"
                               value={regFirstName}
                               onChange={(e) => setRegFirstName(e.target.value)}
@@ -401,8 +424,9 @@ export const LoginPage: React.FC = observer(() => {
                             />
                           </div>
                           <div>
-                            <label className="text-xs font-semibold text-foreground block mb-1">Apellidos</label>
+                            <label htmlFor="register-last-name" className="text-xs font-semibold text-foreground block mb-1">Apellidos</label>
                             <input
+                              id="register-last-name"
                               type="text"
                               value={regLastName}
                               onChange={(e) => setRegLastName(e.target.value)}
@@ -414,8 +438,9 @@ export const LoginPage: React.FC = observer(() => {
                         </div>
 
                         <div>
-                          <label className="text-xs font-semibold text-foreground block mb-1">Correo Electrónico</label>
+                          <label htmlFor="register-email" className="text-xs font-semibold text-foreground block mb-1">Correo Electrónico</label>
                           <input
+                            id="register-email"
                             type="email"
                             value={regEmail}
                             onChange={(e) => setRegEmail(e.target.value)}
@@ -426,8 +451,9 @@ export const LoginPage: React.FC = observer(() => {
                         </div>
 
                         <div>
-                          <label className="text-xs font-semibold text-foreground block mb-1">Contraseña (Mín. 8 caracteres)</label>
+                          <label htmlFor="register-password" className="text-xs font-semibold text-foreground block mb-1">Contraseña (Mín. 8 caracteres)</label>
                           <input
+                            id="register-password"
                             type="password"
                             value={regPassword}
                             onChange={(e) => setRegPassword(e.target.value)}
@@ -448,12 +474,12 @@ export const LoginPage: React.FC = observer(() => {
                             className="mt-0.5 rounded text-primary focus:ring-primary h-4 w-4"
                           />
                           <label htmlFor="termsCheck" className="text-xs text-muted-foreground leading-relaxed">
-                            Acepto los Términos de Servicio y Tratamiento de Datos (v1.0) para la gestión back of house.
+                            Acepto los Términos de Servicio y Tratamiento de Datos (v1) para la gestión back of house.
                           </label>
                         </div>
 
                         {authStore.errorMessage && (
-                          <p className="text-xs text-destructive">{authStore.errorMessage}</p>
+                          <p role="alert" className="text-xs text-destructive">{authStore.errorMessage}</p>
                         )}
 
                         <button
@@ -469,12 +495,13 @@ export const LoginPage: React.FC = observer(() => {
                       /* Paso 2: POST /auth/complete-registration */
                       <form onSubmit={handleRegisterStep2} className="space-y-4">
                         <div>
-                          <label className="text-xs font-semibold text-foreground block mb-1">
+                          <label htmlFor="restaurant-name" className="text-xs font-semibold text-foreground block mb-1">
                             Nombre del Restaurante / Tenant
                           </label>
                           <div className="relative">
                             <Building2 className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                             <input
+                              id="restaurant-name"
                               type="text"
                               value={restaurantName}
                               onChange={(e) => setRestaurantName(e.target.value)}
@@ -487,8 +514,9 @@ export const LoginPage: React.FC = observer(() => {
 
                         <div className="grid grid-cols-3 gap-3">
                           <div className="col-span-2">
-                            <label className="text-xs font-semibold text-foreground block mb-1">Dirección</label>
+                            <label htmlFor="restaurant-address" className="text-xs font-semibold text-foreground block mb-1">Dirección</label>
                             <input
+                              id="restaurant-address"
                               type="text"
                               value={restaurantAddress}
                               onChange={(e) => setRestaurantAddress(e.target.value)}
@@ -497,8 +525,9 @@ export const LoginPage: React.FC = observer(() => {
                             />
                           </div>
                           <div>
-                            <label className="text-xs font-semibold text-foreground block mb-1">C.P.</label>
+                            <label htmlFor="restaurant-postal-code" className="text-xs font-semibold text-foreground block mb-1">C.P.</label>
                             <input
+                              id="restaurant-postal-code"
                               type="text"
                               value={restaurantPostalCode}
                               onChange={(e) => setRestaurantPostalCode(e.target.value)}
@@ -509,51 +538,25 @@ export const LoginPage: React.FC = observer(() => {
                         </div>
 
                         <div>
-                          <label className="text-xs font-semibold text-foreground block mb-2">
-                            Plan Mixzi para el Tenant
+                          <label htmlFor="plan-id" className="text-xs font-semibold text-foreground block mb-2">
+                            Identificador del plan
                           </label>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div
-                              onClick={() => setSelectedPlanId("plan_starter")}
-                              className={`p-3 rounded-xl border cursor-pointer transition ${
-                                selectedPlanId === "plan_starter"
-                                  ? "border-primary bg-primary/5 ring-1 ring-primary"
-                                  : "border-border hover:bg-muted/30"
-                              }`}
-                            >
-                              <div className="font-semibold text-sm">Starter BOH</div>
-                              <div className="text-xs text-muted-foreground mt-0.5">Control de stock & escandallos</div>
-                            </div>
-
-                            <div
-                              onClick={() => setSelectedPlanId("plan_enterprise_pro")}
-                              className={`p-3 rounded-xl border cursor-pointer transition ${
-                                selectedPlanId === "plan_enterprise_pro"
-                                  ? "border-primary bg-primary/5 ring-1 ring-primary"
-                                  : "border-border hover:bg-muted/30"
-                              }`}
-                            >
-                              <div className="flex items-center gap-1 font-semibold text-sm text-primary">
-                                <Sparkles className="w-3.5 h-3.5" />
-                                <span>Pro Restauración</span>
-                              </div>
-                              <div className="text-xs text-muted-foreground mt-0.5">Escaneo OCR + Auditorías</div>
-                            </div>
-                          </div>
+                          <input
+                            id="plan-id"
+                            value={selectedPlanId}
+                            onChange={(e) => setSelectedPlanId(e.target.value)}
+                            required
+                            placeholder="UUID del plan facilitado por Mixzi"
+                            className="min-h-12 w-full rounded-xl border border-input bg-background px-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                          />
+                          <p className="mt-1 text-xs text-muted-foreground">Solicita a Mixzi el identificador de un plan disponible.</p>
                         </div>
 
                         {authStore.errorMessage && (
-                          <p className="text-xs text-destructive">{authStore.errorMessage}</p>
+                          <p role="alert" className="text-xs text-destructive">{authStore.errorMessage}</p>
                         )}
 
                         <div className="flex gap-2 pt-2">
-                          <button
-                            type="button"
-                            onClick={() => setRegisterStep(1)}
-                            className="py-2.5 px-4 rounded-xl border border-border text-sm font-semibold hover:bg-muted transition"
-                          >
-                            Atrás
-                          </button>
                           <button
                             type="submit"
                             disabled={authStore.isLoading}

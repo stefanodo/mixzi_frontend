@@ -6,18 +6,13 @@ import {
   Plus, 
   X, 
   Search, 
-  SlidersHorizontal, 
   AlertTriangle, 
   CheckCircle2, 
   Boxes, 
   Layers, 
-  Sparkles, 
   PackageCheck, 
-  ArrowUpDown,
   Filter,
-  Flame,
   ChevronRight,
-  RefreshCw,
   Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,13 +21,7 @@ import { observer } from "mobx-react-lite";
 import { DataGrid, type DataGridColumn } from "@/components/ui/data-grid";
 import { StockMovementForm } from "@/MixziStockPage/components/StockMovementForm";
 import type { ItemResponseDto } from "@/_generated";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 
 const getCategoryName = (category: unknown) => {
     if (!category || typeof category !== "object") {
@@ -61,20 +50,6 @@ const getUnitValue = (value: unknown) => {
 
     const unit = (value as Record<string, unknown>).unit;
     return typeof unit === "string" ? unit : "";
-};
-
-const handleKeyboardActivation = (
-    event: React.KeyboardEvent,
-    action: () => void,
-) => {
-    if (event.currentTarget instanceof HTMLButtonElement) {
-        return;
-    }
-
-    if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        action();
-    }
 };
 
 const BLOCK_CATEGORY_MAP: Record<string, string[]> = {
@@ -203,8 +178,11 @@ export const Stock = observer(() => {
 
     // Auto-navegación y apertura de formulario para Agregar Artículo desde el Dashboard
     useEffect(() => {
-        const isAddAction = searchParams.get("action") === "add-item" || (location.state as any)?.action === "add-item";
-        const requestedBlock = searchParams.get("block") || (location.state as any)?.block;
+        const state: unknown = location.state;
+        const isAddAction = searchParams.get("action") === "add-item" ||
+            (state !== null && typeof state === "object" && "action" in state && state.action === "add-item");
+        const requestedBlock = searchParams.get("block") ||
+            (state !== null && typeof state === "object" && "block" in state ? state.block : undefined);
 
         if (isAddAction || requestedBlock === "Frescos") {
             setActiveBlock("Frescos");
@@ -246,11 +224,13 @@ export const Stock = observer(() => {
         if (!isMovementFormOpen) return;
 
         const dialog = movementDialogRef.current;
+        const trigger = movementTriggerRef.current;
         const focusableSelector = "button, [href], input, select, textarea, [tabindex]:not([tabindex=\"-1\"])";
         const focusInitialControl = () => movementCloseRef.current?.focus();
         
         const handleDialogKeyDown = (event: KeyboardEvent) => {
             if (event.key === "Escape") {
+                if (event.target instanceof Element && event.target.closest("[data-stock-picker-open]")) return;
                 event.preventDefault();
                 setIsMovementFormOpen(false);
                 return;
@@ -280,7 +260,7 @@ export const Stock = observer(() => {
 
         return () => {
             dialog?.removeEventListener("keydown", handleDialogKeyDown);
-            movementTriggerRef.current?.focus();
+            trigger?.focus();
         };
     }, [isMovementFormOpen]);
 
@@ -520,7 +500,7 @@ export const Stock = observer(() => {
     return (
         <section className="space-y-5 animate-in fade-in duration-300">
             {/* CABECERA OPERACIONAL CON COMPOSICIÓN VISUAL TOP 2026 */}
-            <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br from-card via-card/95 to-muted/30 p-4 sm:p-6 shadow-xs space-y-5 transition-all">
+            <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-linear-to-br from-card via-card/95 to-muted/30 p-4 sm:p-6 shadow-xs space-y-5 transition-all">
                 {/* Glow decorativo suave de fondo */}
                 <div className="pointer-events-none absolute -top-12 -right-12 size-48 rounded-full bg-primary/5 blur-3xl" />
 
@@ -792,7 +772,7 @@ export const Stock = observer(() => {
             <div className={activeBlock === "Frescos" ? "min-w-0 md:grid md:items-stretch md:grid-cols-[340px_minmax(0,1fr)] md:gap-6" : ""}>
                 {/* Formulario en desktop para Frescos */}
                 {activeBlock === "Frescos" && (
-                    <div className="hidden min-w-0 md:flex md:flex-col md:w-[340px] md:min-w-[340px] md:max-w-[340px] h-full">
+                    <div className="hidden min-w-0 md:flex md:flex-col md:w-85 md:min-w-85 md:max-w-85 h-full">
                         <StockMovementForm className="h-full" />
                     </div>
                 )}

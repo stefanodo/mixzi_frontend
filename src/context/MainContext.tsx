@@ -24,4 +24,5 @@ export const useMainStore = () => {
     return store;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const MainStoreInstance = mainStore;

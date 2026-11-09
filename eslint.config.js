@@ -15,8 +15,21 @@ export default defineConfig([
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
+    rules: {
+      'react-refresh/only-export-components': ['error', {
+        allowConstantExport: true,
+        allowCompoundComponents: true,
+        extraHOCs: ['observer'],
+      }],
+    },
     languageOptions: {
       globals: globals.browser,
+    },
+  },
+  {
+    files: ['apis/index.ts', 'apis/apis/index.ts', 'apis/models/index.ts'],
+    linterOptions: {
+      reportUnusedDisableDirectives: 'off',
     },
   },
 ])

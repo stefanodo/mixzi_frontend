@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "generate-mixzi-api-docs": "JAVA_HOME=\"${JAVA_HOME:-$HOME/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home}\" PATH=\"$JAVA_HOME/bin:$PATH\" openapi-generator-cli generate -i ./etc/mxzi-api-docs.yaml -g typescript-fetch -o ./apis -p apiNameSuffix=ControllerApi",
     "lint": "eslint .",
+    "test:auth": "node --test tests/auth-store.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

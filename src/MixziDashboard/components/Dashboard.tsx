@@ -7,17 +7,12 @@ import {
   TrendingUp, 
   Layers, 
   Sparkles, 
-  Search, 
   Boxes, 
   LayoutDashboard, 
   Activity, 
   ShieldAlert, 
-  ArrowUpRight,
-  CheckCircle2,
   Clock,
-  ChevronRight,
-  Filter,
-  RefreshCw
+  ChevronRight
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,7 +26,6 @@ export const Dashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<DashboardViewMode>("overview");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string | null>(null);
 
   // Suggested intents for the interactive copilot search
   const quickIntents = [
@@ -329,10 +323,7 @@ export const Dashboard = () => {
 
             {/* Right side: Stock Health & Live Category Allocation */}
             <div className="lg:col-span-7">
-              <InventoryCharts 
-                onSelectCategory={(cat) => setSelectedCategoryFilter(cat)}
-                compact
-              />
+              <InventoryCharts compact />
             </div>
           </div>
 

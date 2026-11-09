@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
 import {
@@ -13,8 +13,6 @@ import {
   Plus,
   RotateCcw,
   Search,
-  SlidersHorizontal,
-  Sparkles,
   Tag,
   X,
 } from "lucide-react";
@@ -43,6 +41,31 @@ type StockMovementFormProps = {
   onSuccess?: () => void;
   onCancel?: () => void;
 };
+
+const fieldLabels: Record<string, string> = {
+  location: "Local",
+  warehouse: "Almacén",
+  article: "artículo",
+  type: "Tipo de operación",
+  unit: "Unidad de medida",
+};
+
+function handleListboxKeyDown(event: KeyboardEvent<HTMLDivElement>, close: () => void) {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    close();
+    return;
+  }
+  if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+  const options = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="option"]'));
+  if (!options.length) return;
+  event.preventDefault();
+  const current = options.indexOf(document.activeElement as HTMLButtonElement);
+  const next = event.key === "ArrowDown"
+    ? (current + 1) % options.length
+    : (current <= 0 ? options.length - 1 : current - 1);
+  options[next].focus();
+}
 
 /* --- SELECTOR TÁCTIL Y ERGONÓMICO CON BÚSQUEDA --- */
 function StockSelectable({
@@ -76,6 +99,7 @@ function StockSelectable({
     onChange?.(option);
     setIsOpen(false);
     setSearchTerm("");
+    document.getElementById(id)?.focus();
   };
 
   const filteredOptions = options.filter((opt) =>
@@ -83,7 +107,7 @@ function StockSelectable({
   );
 
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div ref={containerRef} data-stock-picker-open={isOpen ? "" : undefined} className="relative w-full">
       <button
         id={id}
         type="button"
@@ -93,12 +117,15 @@ function StockSelectable({
           setIsOpen((prev) => {
             const next = !prev;
             if (next) {
-              setTimeout(() => searchInputRef.current?.focus(), 80);
+              setTimeout(() => {
+                if (searchInputRef.current) searchInputRef.current.focus();
+                else containerRef.current?.querySelector<HTMLButtonElement>('[role="option"]')?.focus();
+              }, 80);
             }
             return next;
           });
         }}
-        className={`group flex min-h-[44px] w-full items-center justify-between gap-2 rounded-xl border bg-background/80 px-3.5 py-2.5 text-left text-base md:text-sm font-medium transition-all duration-200 outline-none backdrop-blur-xs select-none active:scale-[0.99] ${
+        className={`group flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border bg-background/80 px-3.5 py-2.5 text-left text-base md:text-sm font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary backdrop-blur-xs select-none active:scale-[0.99] ${
           isOpen
             ? "border-primary ring-2 ring-primary/20 shadow-xs"
             : "border-border/80 hover:border-primary/50 hover:bg-muted/30"
@@ -127,9 +154,11 @@ function StockSelectable({
 
       {isOpen && (
         <div
-          role="listbox"
-          aria-label={name}
           className="absolute top-full left-0 right-0 z-50 mt-1.5 max-h-64 w-full overflow-hidden rounded-xl border border-border bg-popover/95 p-1.5 shadow-xl backdrop-blur-md animate-in fade-in-0 zoom-in-95 duration-150"
+          onKeyDown={(event) => handleListboxKeyDown(event, () => {
+            setIsOpen(false);
+            document.getElementById(id)?.focus();
+          })}
         >
           {options.length > 5 && (
             <div className="p-1 mb-1 border-b border-border/60">
@@ -138,6 +167,7 @@ function StockSelectable({
                 <input
                   ref={searchInputRef}
                   type="text"
+                  aria-label={`Buscar ${fieldLabels[name] || name}`}
                   placeholder="Buscar opción..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -147,6 +177,7 @@ function StockSelectable({
                   <button
                     type="button"
                     onClick={() => setSearchTerm("")}
+                    aria-label="Limpiar búsqueda"
                     className="absolute right-2 p-0.5 text-muted-foreground hover:text-foreground"
                   >
                     <X className="size-3" />
@@ -156,17 +187,18 @@ function StockSelectable({
             </div>
           )}
 
-          <div className="max-h-48 overflow-y-auto space-y-0.5 overscroll-contain">
+          <div role="listbox" aria-label={fieldLabels[name] || name} className="max-h-48 overflow-y-auto space-y-0.5 overscroll-contain">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option) => {
                 const isSelected = selectedValue === option;
                 return (
-                  <div
+                  <button
                     key={option}
+                    type="button"
                     role="option"
                     aria-selected={isSelected}
                     onClick={() => selectOption(option)}
-                    className={`flex min-h-[40px] md:min-h-[36px] w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${
+                    className={`flex min-h-12 w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
                       isSelected
                         ? "bg-primary/10 text-primary font-semibold"
                         : "text-foreground hover:bg-muted/80 active:bg-muted"
@@ -174,7 +206,7 @@ function StockSelectable({
                   >
                     <span className="truncate">{option}</span>
                     {isSelected && <Check className="size-4 shrink-0 text-primary" />}
-                  </div>
+                  </button>
                 );
               })
             ) : (
@@ -194,6 +226,7 @@ function StockArticleAutocomplete({ id, name, placeholder, options }: StockSelec
   const [inputValue, setInputValue] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const suppressNextFocus = useRef(false);
 
   useEffect(() => {
     const handleOutside = (event: PointerEvent) => {
@@ -222,10 +255,12 @@ function StockArticleAutocomplete({ id, name, placeholder, options }: StockSelec
   const selectOption = (opt: string) => {
     setInputValue(opt);
     setIsOpen(false);
+    suppressNextFocus.current = true;
+    document.getElementById(id)?.focus();
   };
 
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div ref={containerRef} data-stock-picker-open={isOpen ? "" : undefined} className="relative w-full">
       <div className="relative flex items-center">
         <Package className="absolute left-3.5 size-4 text-muted-foreground pointer-events-none" />
         <input
@@ -239,8 +274,22 @@ function StockArticleAutocomplete({ id, name, placeholder, options }: StockSelec
             setInputValue(e.target.value);
             setIsOpen(e.target.value.trim().length > 0);
           }}
-          onFocus={() => inputValue.trim().length > 0 && setIsOpen(true)}
-          className="flex min-h-[44px] w-full rounded-xl border border-border/80 bg-background/80 pl-10 pr-9 py-2.5 text-base md:text-sm font-medium text-foreground placeholder:text-muted-foreground outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 hover:border-primary/50"
+          onFocus={() => {
+            if (suppressNextFocus.current) {
+              suppressNextFocus.current = false;
+            } else if (inputValue.trim().length > 0) {
+              setIsOpen(true);
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowDown" && isOpen && filteredOptions.length) {
+              event.preventDefault();
+              containerRef.current?.querySelector<HTMLButtonElement>('[role="option"]')?.focus();
+            } else if (event.key === "Escape") {
+              setIsOpen(false);
+            }
+          }}
+          className="flex min-h-11 w-full rounded-xl border border-border/80 bg-background/80 pl-10 pr-9 py-2.5 text-base md:text-sm font-medium text-foreground placeholder:text-muted-foreground outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 hover:border-primary/50"
         />
         {inputValue && (
           <button
@@ -261,20 +310,27 @@ function StockArticleAutocomplete({ id, name, placeholder, options }: StockSelec
       {isOpen && filteredOptions.length > 0 && (
         <div
           role="listbox"
+          aria-label={`Sugerencias de ${fieldLabels[name] || name}`}
+          onKeyDown={(event) => handleListboxKeyDown(event, () => {
+            setIsOpen(false);
+            document.getElementById(id)?.focus();
+          })}
           className="absolute top-full left-0 right-0 z-50 mt-1.5 max-h-56 overflow-y-auto rounded-xl border border-border bg-popover/95 p-1.5 shadow-xl backdrop-blur-md animate-in fade-in-0 duration-150"
         >
           {filteredOptions.map((opt) => (
-            <div
+            <button
               key={opt}
+              type="button"
               role="option"
+              aria-selected={inputValue === opt}
               onClick={() => selectOption(opt)}
-              className="flex min-h-[40px] md:min-h-[36px] w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm text-foreground hover:bg-muted/80 active:bg-muted transition-colors"
+              className="flex min-h-12 w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm text-foreground hover:bg-muted/80 active:bg-muted transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               <span className="font-medium truncate">{opt}</span>
               <span className="text-[11px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
                 Insumo
               </span>
-            </div>
+            </button>
           ))}
         </div>
       )}
@@ -476,7 +532,7 @@ export function StockMovementForm({
                       placeholder="0.00"
                       value={quantity}
                       onChange={(e) => setQuantity(e.target.value)}
-                      className="flex min-h-[44px] w-full rounded-xl border border-border/80 bg-background/80 px-3.5 py-2.5 text-center text-lg md:text-base font-mono font-bold text-foreground placeholder:text-muted-foreground outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 hover:border-primary/50"
+                      className="flex min-h-11 w-full rounded-xl border border-border/80 bg-background/80 px-3.5 py-2.5 text-center text-lg md:text-base font-mono font-bold text-foreground placeholder:text-muted-foreground outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 hover:border-primary/50"
                     />
                   </div>
 
@@ -521,7 +577,7 @@ export function StockMovementForm({
                   placeholder="Ej. Lote urgente de proveedor, merma por rotura..."
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  className="flex min-h-[42px] w-full rounded-xl border border-border/80 bg-background/80 px-3.5 py-2 text-base md:text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 hover:border-primary/50"
+                  className="flex min-h-10.5 w-full rounded-xl border border-border/80 bg-background/80 px-3.5 py-2 text-base md:text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 hover:border-primary/50"
                 />
               </Field>
             </div>
@@ -531,7 +587,7 @@ export function StockMovementForm({
           <div className="pt-2 space-y-2">
             <Button
               type="submit"
-              className="w-full min-h-[44px] rounded-xl font-semibold shadow-xs flex items-center justify-center gap-2 text-sm"
+              className="w-full min-h-11 rounded-xl font-semibold shadow-xs flex items-center justify-center gap-2 text-sm"
             >
               <Check className="size-4" />
               Guardar y Registrar Movimiento
@@ -540,7 +596,7 @@ export function StockMovementForm({
               <Button
                 type="button"
                 variant="outline"
-                className="flex-1 min-h-[40px] rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground"
+                className="flex-1 min-h-10 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground"
                 onClick={() => {
                   setQuantity("");
                   setNote("");
@@ -552,7 +608,7 @@ export function StockMovementForm({
                 <Button
                   type="button"
                   variant="ghost"
-                  className="flex-1 min-h-[40px] rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground"
+                  className="flex-1 min-h-10 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground"
                   onClick={onCancel}
                 >
                   Cerrar

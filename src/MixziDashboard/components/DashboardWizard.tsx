@@ -2,25 +2,16 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   PlusCircle, 
-  ArrowRight, 
   Boxes, 
   Sparkles, 
   ClipboardCheck,
   AlertTriangle,
-  RotateCcw,
-  SlidersHorizontal,
-  CheckCircle2,
   ChevronRight,
   TrendingDown,
-  DollarSign,
-  PackageSearch,
   Truck,
   Lightbulb,
   Clock,
-  Flame,
-  Check,
-  RefreshCw,
-  BadgeAlert
+  Check
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,7 +37,6 @@ export const DashboardWizard: React.FC = () => {
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState<"all" | "urgent" | "stock" | "costs" | "operations">("all");
   const [completedIds, setCompletedIds] = useState<string[]>([]);
-  const [showDismissedToast, setShowDismissedToast] = useState<string | null>(null);
 
   const allSuggestions: WizardSuggestion[] = [
     {
@@ -172,16 +162,17 @@ export const DashboardWizard: React.FC = () => {
 
         {/* PILL FILTERS */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-          {[
+          {([
             { id: "all", label: "Todas" },
             { id: "urgent", label: "🚨 Urgentes" },
             { id: "stock", label: "📦 Inventario" },
             { id: "costs", label: "💰 Costes" },
             { id: "operations", label: "📋 Operativa" },
-          ].map(f => (
+          ] as const).map(f => (
             <button
               key={f.id}
-              onClick={() => setActiveFilter(f.id as any)}
+              onClick={() => setActiveFilter(f.id)}
+              aria-pressed={activeFilter === f.id}
               className={`px-3 py-1 text-xs rounded-full font-medium whitespace-nowrap transition-all ${
                 activeFilter === f.id
                   ? "bg-primary text-primary-foreground shadow-xs"
@@ -195,7 +186,7 @@ export const DashboardWizard: React.FC = () => {
       </div>
 
       {/* QUICK SUGGESTIONS SMART BANNER */}
-      <div className="bg-gradient-to-r from-amber-500/10 via-primary/5 to-transparent border border-amber-500/20 rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-linear-to-r from-amber-500/10 via-primary/5 to-transparent border border-amber-500/20 rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-start gap-3">
           <div className="p-2 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
             <Lightbulb className="size-4" />
@@ -247,13 +238,13 @@ export const DashboardWizard: React.FC = () => {
                 isCompleted 
                   ? "opacity-60 bg-muted/30 border-border/40"
                   : q.primary 
-                    ? "border-primary/50 bg-primary/[0.03] hover:border-primary shadow-xs" 
+                    ? "border-primary/50 bg-primary/3 hover:border-primary shadow-xs"
                     : "border-border/80 hover:border-primary/30"
               }`}
             >
               {q.primary && !isCompleted && (
                 <div className="absolute top-0 right-0 w-16 h-16 pointer-events-none overflow-hidden">
-                  <div className="absolute transform rotate-45 bg-primary text-[9px] font-bold text-primary-foreground text-center py-0.5 right-[-35px] top-[14px] w-[120px] shadow-xs">
+                  <div className="absolute transform rotate-45 bg-primary text-[9px] font-bold text-primary-foreground text-center py-0.5 -right-8.75 top-3.5 w-30 shadow-xs">
                     TOP
                   </div>
                 </div>
@@ -334,6 +325,8 @@ export const DashboardWizard: React.FC = () => {
                   variant="ghost"
                   onClick={(e) => toggleComplete(q.id, e)}
                   title={isCompleted ? "Marcar como pendiente" : "Marcar como atendida"}
+                  aria-label={`${isCompleted ? "Marcar como pendiente" : "Marcar como atendida"}: ${q.question}`}
+                  aria-pressed={isCompleted}
                   className={`size-9 shrink-0 ${isCompleted ? "text-emerald-500 bg-emerald-500/10" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   <Check className="size-4" />

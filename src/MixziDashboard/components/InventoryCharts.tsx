@@ -1,28 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   AlertTriangle, 
-  TrendingUp, 
   PackageCheck, 
   PieChart as PieChartIcon, 
   BarChart3, 
   Activity,
-  ArrowRight,
   ExternalLink,
   ChevronDown,
-  ChevronUp,
   X,
-  Info,
   Calendar,
-  Sparkles,
   ShoppingBag,
-  RotateCcw,
-  CheckCircle2,
-  RefreshCw,
-  Clock,
-  Layers,
-  ArrowUpRight,
-  ArrowDownRight
+  RefreshCw
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -405,7 +394,6 @@ export const InventoryCharts: React.FC<InventoryChartsProps> = ({
   // Periodo temporal seleccionado
   const [period, setPeriod] = useState<Period>("today");
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [animKey, setAnimKey] = useState<number>(0);
 
   // Estados interactivos para drill-down
   const [selectedHealthFilter, setSelectedHealthFilter] = useState<"optimal" | "warning" | "critical" | null>(null);
@@ -424,7 +412,6 @@ export const InventoryCharts: React.FC<InventoryChartsProps> = ({
     setSelectedDay(null);
     setTimeout(() => {
       setIsLoading(false);
-      setAnimKey(prev => prev + 1);
     }, 350);
   };
 
@@ -432,7 +419,6 @@ export const InventoryCharts: React.FC<InventoryChartsProps> = ({
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      setAnimKey(prev => prev + 1);
     }, 450);
   };
 
